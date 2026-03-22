@@ -1,0 +1,223 @@
+# Martin Fowler's formatting style for all clang-format languages
+#
+# Inferred from his published code examples (Refactoring 2nd ed.,
+# martinfowler.com articles, refactoring.com catalog).
+#
+# Fowler writes primarily in JavaScript; these settings translate his
+# conventions to all supported languages as faithfully as clang-format
+# allows.  The Cpp section is the default; language-specific overrides
+# follow.
+
+BasedOnStyle: LLVM
+
+# --- Indentation ---
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+ContinuationIndentWidth: 2
+ConstructorInitializerIndentWidth: 4
+AccessModifierOffset: -2
+IndentCaseLabels: true
+IndentCaseBlocks: false
+IndentExternBlock: AfterExternBlock
+IndentPPDirectives: None
+IndentWrappedFunctionNames: false
+NamespaceIndentation: All
+
+# --- Column Limit ---
+ColumnLimit: 80
+
+# --- Brace Placement (K&R / Attach) ---
+BreakBeforeBraces: Attach
+
+# --- Short Forms ---
+# Fowler uses single-line if without else:
+#   if ("comedy" === play.type) volumeCredits += ...;
+AllowShortIfStatementsOnASingleLine: WithoutElse
+
+# Short accessor bodies on one line:
+#   get name() {return this._data.name;}
+AllowShortBlocksOnASingleLine: Always
+AllowShortFunctionsOnASingleLine: All
+AllowShortLambdasOnASingleLine: All
+
+# Fowler does NOT use single-line loops or case labels
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: true
+
+# --- Spacing ---
+# Space after control keywords: if (, for (, switch (, while (
+# No space before function parens: func(
+SpaceBeforeParens: ControlStatements
+SpaceBeforeAssignmentOperators: true
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: true
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: false
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: Never
+SpacesInParens: Never
+SpacesInSquareBrackets: false
+
+# --- Operators ---
+# Break after operator (operator stays on first line)
+BreakBeforeBinaryOperators: None
+# Break before ? and : in ternary
+BreakBeforeTernaryOperators: true
+AlignOperands: Align
+
+# --- Alignment ---
+# Fowler does not align consecutive assignments or declarations
+AlignConsecutiveAssignments:
+  Enabled: false
+AlignConsecutiveDeclarations:
+  Enabled: false
+AlignConsecutiveMacros:
+  Enabled: false
+AlignAfterOpenBracket: AlwaysBreak
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 0
+
+# --- Pointer / Reference (C++ specific) ---
+# No direct Fowler guidance; Left is the modern C++ convention
+# and pairs well with type-oriented thinking (int* p not int *p)
+PointerAlignment: Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+
+# --- Blank Lines ---
+MaxEmptyLinesToKeep: 1
+KeepEmptyLines:
+  AtEndOfFile: false
+  AtStartOfBlock: false
+  AtStartOfFile: false
+
+# --- Breaking ---
+BreakAfterReturnType: All
+BreakConstructorInitializers: BeforeComma
+PackConstructorInitializers: Never
+BreakInheritanceList: BeforeColon
+BreakStringLiterals: true
+# Fowler keeps declarations on separate lines for readability;
+# template<...> should always get its own line.
+BreakTemplateDeclarations: Yes
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+BinPackArguments: false
+BinPackParameters: OnePerLine
+
+# --- Includes ---
+SortIncludes: CaseInsensitive
+IncludeBlocks: Preserve
+
+# --- Miscellaneous ---
+FixNamespaceComments: true
+InsertNewlineAtEOF: true
+ReflowComments: true
+Standard: Latest
+
+# ===================================================================
+# Language-specific overrides
+# ===================================================================
+# Each section inherits from the Cpp defaults above and overrides
+# only what is language-specific.
+
+---
+# --- Java ---
+# Fowler's Refactoring 1st edition was written in Java.
+# His style: compact, small methods, K&R braces, 2-space indent.
+Language: Java
+
+# Annotations belong on their own line for readability
+BreakAfterJavaFieldAnnotations: true
+
+# Import ordering
+SortJavaStaticImport: Before
+
+---
+# --- JavaScript / TypeScript ---
+# Fowler's Refactoring 2nd edition language — the most authoritative
+# source for his formatting preferences.
+Language: JavaScript
+
+# Fowler consistently uses double quotes in his JS code on
+# martinfowler.com and in the Refactoring catalog examples.
+JavaScriptQuotes: Double
+
+# Wrap import statements when they exceed the column limit
+JavaScriptWrapImports: true
+
+# Fowler does not use trailing commas in his published examples
+InsertTrailingCommas: None
+
+# JS object literals should not have spaces before colons:
+# {name: "foo"}  not  {name : "foo"}
+SpacesInContainerLiterals: false
+
+# JS has no C-style return types; disable break so that get/set
+# keywords are not split from their property names.
+BreakAfterReturnType: None
+
+---
+# --- Objective-C ---
+# No direct Fowler guidance; translate his general readability
+# preferences to ObjC idioms.
+Language: ObjC
+
+# ObjC convention is pointer star on the variable: NSString *name
+PointerAlignment: Right
+ReferenceAlignment: Right
+
+# Block indent matches the overall indent width
+ObjCBlockIndentWidth: 2
+
+# Space before protocol list for readability: NSObject <Protocol>
+ObjCSpaceBeforeProtocolList: true
+
+# No space after @property keyword: @property(nonatomic, ...)
+ObjCSpaceAfterProperty: false
+
+# Break before nested block parameters for readability
+ObjCBreakBeforeNestedBlockParam: true
+
+# Bin-pack protocol lists only when they don't fit
+ObjCBinPackProtocolList: Auto
+
+---
+# --- C# ---
+# Similar to Java — Fowler's readability principles apply directly.
+Language: CSharp
+
+---
+# --- Protocol Buffers ---
+# Straightforward data definition language.
+# Inherit core style (2-space indent, 80 columns).
+Language: Proto
+
+---
+# --- JSON ---
+# Data format — use 2-space indent and no column limit so that
+# object keys and arrays are formatted cleanly.
+Language: Json
+ColumnLimit: 0
+BreakArrays: false
+
+---
+# --- Verilog ---
+# Hardware description language — inherit core readability settings.
+Language: Verilog
+
+# Verilog convention: no spaces in bit ranges [7:0] not [7 : 0]
+BitFieldColonSpacing: None
+
+---
+# --- TableGen ---
+# LLVM-specific format — inherit core readability settings.
+Language: TableGen

@@ -1,0 +1,85 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+	"major" : 3,
+	"minor" : 21,
+	"patch" : 0
+    },
+    "configurePresets": [
+	{
+	    "name": "base",
+	    "hidden" : true,
+	    "generator" : "Ninja Multi-Config",
+	    "cacheVariables" : {
+		"CMAKE_CXX_FLAGS" : {
+		    "type" : "STRING",
+		    "value" : "-Wall -Wextra -pedantic -Werror"
+		},
+		"CMAKE_CXX_FLAGS_RELWITHDEBINFO" : {
+		    "type" : "STRING",
+		    "value" : "-g -O3"
+		},
+		"CMAKE_EXPORT_COMPILE_COMMANDS" : {
+		    "type" : "BOOL",
+		    "value" : "ON"
+		}
+	    }
+	},
+	{
+	    "name" : "default",
+	    "inherits" : "base",
+	    "generator" : "Unix Makefiles",
+	    "binaryDir" : "${sourceDir}/build"
+	},
+	{
+	    "name": "multi",
+	    "inherits" : "base",
+	    "binaryDir" : "${sourceDir}/build-multi/default"
+	},
+        {
+            "name": "sanitary",
+            "inherits" : "default",
+            "cacheVariables" : {
+                "CMAKE_CXX_FLAGS" : {
+                    "type" : "STRING",
+                    "value" : "-Wall -Wextra -pedantic -Werror -fsanitize=address,undefined"
+                },
+                "CMAKE_CXX_FLAGS_RELEASE" : {
+                    "type" : "STRING",
+                    "value" : "-g -O3"
+                }
+            }
+        }
+    ],
+    "buildPresets" : [
+	{
+	    "name" : "default",
+	    "configurePreset" : "default"
+	},
+        {
+	    "name" : "sanitary",
+	    "configurePreset" : "sanitary"
+	}
+    ],
+    "testPresets" : [
+	{
+	    "name": "default",
+	    "configurePreset" : "default",
+	    "output" : {
+		"outputOnFailure" : true
+	    }
+	},
+        {
+	    "name": "sanitary",
+	    "configurePreset" : "sanitary",
+	    "output" : {
+		"outputOnFailure" : true
+	    }
+	}
+    ],
+    "packagePresets" : [
+    ],
+    "workflowPresets" : [
+
+    ]
+}

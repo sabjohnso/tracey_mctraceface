@@ -1,0 +1,32 @@
+#pragma once
+
+namespace tracey_mctraceface::Config
+{
+  struct Info {
+    static constexpr char name[] = ${PROJECT_NAME};
+    struct Version {
+      static constexpr int major = ${PROJECT_VERSION_MAJOR};
+      static constexpr int minor = ${PROJECT_VERSION_MINOR};
+      static constexpr int patch = ${PROJECT_VERSION_PATCH};
+    };
+    struct Compilers
+    {
+      struct C {
+        static constexpr char cmake_c_compiler [] = "${CMAKE_C_COMPILER}";
+        static constexpr char cmake_c_flags [] = "${CMAKE_C_FLAGS}";
+        static constexpr char cmake_c_flags_release [] = "${CMAKE_C_FLAGS_RELEASE}";
+        static constexpr char cmake_c_flags_debug [] = "${CMAKE_C_FLAGS_DEBUG}";
+        static constexpr char cmake_c_flags_relwithdebinfo [] = "${CMAKE_C_FLAGS_RELWITHDEBINFO}";
+        static constexpr char cmake_c_flags_minsizerel [] = "${CMAKE_C_FLAGS_MINSIZEREL}";
+      };
+      struct CXX {
+        static constexpr char cmake_cxx_compiler [] = "${CMAKE_CXX_COMPILER}";
+        static constexpr char cmake_cxx_flags [] = "${CMAKE_CXX_FLAGS}";
+        static constexpr char cmake_cxx_flags_release [] = "${CMAKE_CXX_FLAGS_RELEASE}";
+        static constexpr char cmake_cxx_flags_debug [] = "${CMAKE_CXX_FLAGS_DEBUG}";
+        static constexpr char cmake_cxx_flags_relwithdebinfo [] = "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}";
+        static constexpr char cmake_cxx_flags_minsizerel [] = "${CMAKE_CXX_FLAGS_MINSIZEREL}";
+      }
+    };
+  };
+} // end of namespace tracey_mctraceface::Config
