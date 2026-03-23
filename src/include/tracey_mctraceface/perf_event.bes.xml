@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Binary event record definitions for parsed perf script output.
+     Fixed-size types for the high-volume branch and power events. -->
+<encoding xmlns="http://xb.dev/encoding"
+          target-namespace="http://tracey-mctraceface.dev/perf_event">
+
+  <defaults byte-order="little-endian" bit-order="lsb-first" alignment="1"/>
+
+  <!-- BranchEvent: 56 bytes
+       The most common event type from Intel PT branch tracing. -->
+  <message name="BranchEvent" type="BranchEvent">
+    <field name="pid" bits="32" encoding="unsigned"/>
+    <field name="tid" bits="32" encoding="unsigned"/>
+    <field name="time_ns" bits="64" encoding="unsigned"/>
+    <field name="kind" bits="8" encoding="unsigned"/>
+    <field name="trace_state" bits="8" encoding="unsigned"/>
+    <field name="in_transaction" bits="8" encoding="unsigned"/>
+    <padding bits="8"/>
+    <field name="src_ip" bits="64" encoding="unsigned"/>
+    <field name="src_symbol_id" bits="32" encoding="unsigned"/>
+    <field name="src_symbol_offset" bits="32" encoding="twos-complement"/>
+    <field name="dst_ip" bits="64" encoding="unsigned"/>
+    <field name="dst_symbol_id" bits="32" encoding="unsigned"/>
+    <field name="dst_symbol_offset" bits="32" encoding="twos-complement"/>
+  </message>
+
+  <!-- PowerEvent: 24 bytes
+       Emitted on CPU frequency changes (CBR events). -->
+  <message name="PowerEvent" type="PowerEvent">
+    <field name="pid" bits="32" encoding="unsigned"/>
+    <field name="tid" bits="32" encoding="unsigned"/>
+    <field name="time_ns" bits="64" encoding="unsigned"/>
+    <field name="freq_mhz" bits="32" encoding="unsigned"/>
+    <padding bits="32"/>
+  </message>
+
+</encoding>

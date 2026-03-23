@@ -1,2 +1,11 @@
 tracey_mctraceface_add_test(fxt_record)
-tracey_mctraceface_add_fxt_test(fxt_writer)
+target_link_libraries(fxt_record_test PRIVATE fxt_types)
+
+tracey_mctraceface_add_test(fxt_writer)
+target_link_libraries(fxt_writer_test PRIVATE tracey_mctraceface::fxt_writer)
+
+tracey_mctraceface_add_test(perf_event_record)
+target_link_libraries(perf_event_record_test PRIVATE perf_event_types)
+
+tracey_mctraceface_add_test(perf_script_parser)
+target_link_libraries(perf_script_parser_test PRIVATE tracey_mctraceface::perf_script_parser)

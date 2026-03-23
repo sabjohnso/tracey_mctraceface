@@ -8,3 +8,14 @@ set_target_properties(tracey_mctraceface_fxt_writer PROPERTIES
   CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
 
 add_library(tracey_mctraceface::fxt_writer ALIAS tracey_mctraceface_fxt_writer)
+
+add_library(tracey_mctraceface_perf_script_parser perf_script_parser.cpp)
+
+target_link_libraries(tracey_mctraceface_perf_script_parser
+  PUBLIC tracey_mctraceface::header)
+
+set_target_properties(tracey_mctraceface_perf_script_parser PROPERTIES
+  EXPORT_NAME perf_script_parser
+  CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
+
+add_library(tracey_mctraceface::perf_script_parser ALIAS tracey_mctraceface_perf_script_parser)
