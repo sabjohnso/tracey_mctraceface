@@ -1,1 +1,2 @@
 tracey_mctraceface_add_test(fxt_record)
+tracey_mctraceface_add_fxt_test(fxt_writer)
