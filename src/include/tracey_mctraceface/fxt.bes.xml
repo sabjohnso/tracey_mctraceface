@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fuchsia Trace Format (FXT) binary record definitions.
+     Each message is a fixed-layout atom used by the FxtWriter to
+     assemble complete (possibly variable-length) FXT records. -->
+<encoding xmlns="http://xb.dev/encoding"
+          target-namespace="http://tracey-mctraceface.dev/fxt">
+
+  <defaults byte-order="little-endian" bit-order="lsb-first" alignment="1"/>
+
+  <!-- =================================================================
+       Complete fixed-size records
+       ================================================================= -->
+
+  <message name="MagicNumberRecord" type="MagicNumberRecord">
+    <wire-field name="magic" bits="64"/>
+  </message>
+
+  <!-- Provider section metadata: rtype=0, mtype=2 -->
+  <message name="ProviderSectionMetadata" type="ProviderSectionMetadata">
+    <wire-field name="rtype" bits="4"/>
+    <wire-field name="rsize" bits="12"/>
+    <wire-field name="mtype" bits="4"/>
+    <padding bits="12"/>
+    <field name="provider_id" bits="32" encoding="unsigned"/>
+  </message>
+
+  <!-- Initialization record (extended 4-word form): rtype=1, rsize=4 -->
+  <message name="InitRecord" type="InitRecord">
+    <wire-field name="rtype" bits="4"/>
+    <wire-field name="rsize" bits="12"/>
+    <padding bits="48"/>
+    <field name="ticks_per_second" bits="64" encoding="unsigned"/>
+    <field name="base_ticks" bits="64" encoding="unsigned"/>
+    <field name="base_time_ns" bits="64" encoding="unsigned"/>
+  </message>
+
+  <!-- Thread record: rtype=3, rsize=3 -->
+  <message name="ThreadRecord" type="ThreadRecord">
+    <wire-field name="rtype" bits="4"/>
+    <wire-field name="rsize" bits="12"/>
+    <field name="thread_index" bits="8" encoding="unsigned"/>
+    <padding bits="40"/>
+    <field name="pid" bits="64" encoding="unsigned"/>
+    <field name="tid" bits="64" encoding="unsigned"/>
+  </message>
+
+  <!-- =================================================================
+       Headers for variable-length records
+       ================================================================= -->
+
+  <!-- Provider info metadata header: rtype=0, mtype=1 -->
+  <message name="ProviderInfoHeader" type="ProviderInfoHeader">
+    <wire-field name="rtype" bits="4"/>
+    <field name="rsize" bits="12" encoding="unsigned"/>
+    <wire-field name="mtype" bits="4"/>
+    <field name="name_len" bits="12" encoding="unsigned"/>
+    <field name="provider_id" bits="32" encoding="unsigned"/>
+  </message>
+
+  <!-- String record header: rtype=2 -->
+  <message name="StringRecordHeader" type="StringRecordHeader">
+    <wire-field name="rtype" bits="4"/>
+    <field name="rsize" bits="12" encoding="unsigned"/>
+    <field name="string_id" bits="15" encoding="unsigned"/>
+    <padding bits="1"/>
+    <field name="str_len" bits="15" encoding="unsigned"/>
+    <padding bits="17"/>
+  </message>
+
+  <!-- Event record header + timestamp: rtype=4 -->
+  <message name="EventRecordHeader" type="EventRecordHeader">
+    <wire-field name="rtype" bits="4"/>
+    <field name="rsize" bits="12" encoding="unsigned"/>
+    <field name="event_type" bits="4" encoding="unsigned"/>
+    <field name="num_args" bits="4" encoding="unsigned"/>
+    <field name="thread_ref" bits="8" encoding="unsigned"/>
+    <field name="category_ref" bits="16" encoding="unsigned"/>
+    <field name="name_ref" bits="16" encoding="unsigned"/>
+    <field name="timestamp" bits="64" encoding="unsigned"/>
+  </message>
+
+  <!-- Kernel object record header + koid: rtype=7 -->
+  <message name="KernelObjectHeader" type="KernelObjectHeader">
+    <wire-field name="rtype" bits="4"/>
+    <field name="rsize" bits="12" encoding="unsigned"/>
+    <field name="obj_type" bits="8" encoding="unsigned"/>
+    <field name="name_ref" bits="16" encoding="unsigned"/>
+    <field name="num_args" bits="4" encoding="unsigned"/>
+    <padding bits="20"/>
+    <field name="koid" bits="64" encoding="unsigned"/>
+  </message>
+
+  <!-- =================================================================
+       Argument records
+       ================================================================= -->
+
+  <!-- Int32 argument: arg_type=1, arg_size=1 -->
+  <message name="ArgInt32" type="ArgInt32">
+    <wire-field name="arg_type" bits="4"/>
+    <wire-field name="arg_size" bits="12"/>
+    <field name="arg_name" bits="16" encoding="unsigned"/>
+    <field name="value" bits="32" encoding="twos-complement"/>
+  </message>
+
+  <!-- Int64 argument: arg_type=3, arg_size=2 -->
+  <message name="ArgInt64" type="ArgInt64">
+    <wire-field name="arg_type" bits="4"/>
+    <wire-field name="arg_size" bits="12"/>
+    <field name="arg_name" bits="16" encoding="unsigned"/>
+    <padding bits="32"/>
+    <field name="value" bits="64" encoding="twos-complement"/>
+  </message>
+
+  <!-- Float64 argument: arg_type=5, arg_size=2 -->
+  <message name="ArgFloat64" type="ArgFloat64">
+    <wire-field name="arg_type" bits="4"/>
+    <wire-field name="arg_size" bits="12"/>
+    <field name="arg_name" bits="16" encoding="unsigned"/>
+    <padding bits="32"/>
+    <field name="value" bits="64" encoding="ieee754"/>
+  </message>
+
+  <!-- String argument: arg_type=6, arg_size=1 -->
+  <message name="ArgString" type="ArgString">
+    <wire-field name="arg_type" bits="4"/>
+    <wire-field name="arg_size" bits="12"/>
+    <field name="arg_name" bits="16" encoding="unsigned"/>
+    <field name="string_ref" bits="16" encoding="unsigned"/>
+    <padding bits="16"/>
+  </message>
+
+  <!-- Pointer argument: arg_type=7, arg_size=2 -->
+  <message name="ArgPointer" type="ArgPointer">
+    <wire-field name="arg_type" bits="4"/>
+    <wire-field name="arg_size" bits="12"/>
+    <field name="arg_name" bits="16" encoding="unsigned"/>
+    <padding bits="32"/>
+    <field name="value" bits="64" encoding="unsigned"/>
+  </message>
+
+  <!-- Koid argument: arg_type=8, arg_size=2 -->
+  <message name="ArgKoid" type="ArgKoid">
+    <wire-field name="arg_type" bits="4"/>
+    <wire-field name="arg_size" bits="12"/>
+    <field name="arg_name" bits="16" encoding="unsigned"/>
+    <padding bits="32"/>
+    <field name="value" bits="64" encoding="unsigned"/>
+  </message>
+
+</encoding>

@@ -17,6 +17,9 @@ include(tracey_mctraceface_deps)
 add_subdirectory(src)
 
 if(tracey_mctraceface_BUILD_TESTING)
+  # cmake_utilities/FindCURL.cmake force-sets BUILD_TESTING OFF;
+  # restore it so our tests are built.
+  set(BUILD_TESTING ON CACHE BOOL "" FORCE)
   include(CTest)
   if(BUILD_TESTING)
     add_subdirectory(test)

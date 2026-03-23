@@ -6,6 +6,7 @@ macro(tracey_mctraceface_add_test test_name)
   add_executable(${exe_name} ${src_name})
   target_link_libraries(${exe_name} PRIVATE
     tracey_mctraceface::header
+    fxt_types
     Catch2::Catch2WithMain)
   set_target_properties(${exe_name}
     PROPERTIES
