@@ -9,3 +9,9 @@ target_link_libraries(perf_event_record_test PRIVATE perf_event_types)
 
 tracey_mctraceface_add_test(perf_script_parser)
 target_link_libraries(perf_script_parser_test PRIVATE tracey_mctraceface::perf_script_parser)
+
+tracey_mctraceface_add_test(shorten_symbol)
+target_link_libraries(shorten_symbol_test PRIVATE tracey_mctraceface::shorten_symbol)
+
+tracey_mctraceface_add_test(stack_reconstructor)
+target_link_libraries(stack_reconstructor_test PRIVATE tracey_mctraceface::stack_reconstructor)

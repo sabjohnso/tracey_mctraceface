@@ -19,3 +19,25 @@ set_target_properties(tracey_mctraceface_perf_script_parser PROPERTIES
   CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
 
 add_library(tracey_mctraceface::perf_script_parser ALIAS tracey_mctraceface_perf_script_parser)
+
+add_library(tracey_mctraceface_shorten_symbol shorten_symbol.cpp)
+
+target_link_libraries(tracey_mctraceface_shorten_symbol
+  PUBLIC tracey_mctraceface::header)
+
+set_target_properties(tracey_mctraceface_shorten_symbol PROPERTIES
+  EXPORT_NAME shorten_symbol
+  CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
+
+add_library(tracey_mctraceface::shorten_symbol ALIAS tracey_mctraceface_shorten_symbol)
+
+add_library(tracey_mctraceface_stack_reconstructor stack_reconstructor.cpp)
+
+target_link_libraries(tracey_mctraceface_stack_reconstructor
+  PUBLIC tracey_mctraceface::fxt_writer tracey_mctraceface::shorten_symbol)
+
+set_target_properties(tracey_mctraceface_stack_reconstructor PROPERTIES
+  EXPORT_NAME stack_reconstructor
+  CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
+
+add_library(tracey_mctraceface::stack_reconstructor ALIAS tracey_mctraceface_stack_reconstructor)
