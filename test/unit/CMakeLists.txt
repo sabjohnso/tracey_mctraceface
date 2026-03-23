@@ -15,3 +15,12 @@ target_link_libraries(shorten_symbol_test PRIVATE tracey_mctraceface::shorten_sy
 
 tracey_mctraceface_add_test(stack_reconstructor)
 target_link_libraries(stack_reconstructor_test PRIVATE tracey_mctraceface::stack_reconstructor)
+
+tracey_mctraceface_add_test(file_sink)
+target_link_libraries(file_sink_test PRIVATE tracey_mctraceface::file_sink)
+
+tracey_mctraceface_add_test(perf_capabilities)
+target_link_libraries(perf_capabilities_test PRIVATE tracey_mctraceface::perf_capabilities)
+
+tracey_mctraceface_add_test(perf_driver)
+target_link_libraries(perf_driver_test PRIVATE tracey_mctraceface::perf_driver)

@@ -41,3 +41,36 @@ set_target_properties(tracey_mctraceface_stack_reconstructor PROPERTIES
   CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
 
 add_library(tracey_mctraceface::stack_reconstructor ALIAS tracey_mctraceface_stack_reconstructor)
+
+add_library(tracey_mctraceface_perf_capabilities perf_capabilities.cpp)
+
+target_link_libraries(tracey_mctraceface_perf_capabilities
+  PUBLIC tracey_mctraceface::header)
+
+set_target_properties(tracey_mctraceface_perf_capabilities PROPERTIES
+  EXPORT_NAME perf_capabilities
+  CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
+
+add_library(tracey_mctraceface::perf_capabilities ALIAS tracey_mctraceface_perf_capabilities)
+
+add_library(tracey_mctraceface_perf_driver perf_driver.cpp)
+
+target_link_libraries(tracey_mctraceface_perf_driver
+  PUBLIC tracey_mctraceface::header tracey_mctraceface::perf_capabilities)
+
+set_target_properties(tracey_mctraceface_perf_driver PROPERTIES
+  EXPORT_NAME perf_driver
+  CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
+
+add_library(tracey_mctraceface::perf_driver ALIAS tracey_mctraceface_perf_driver)
+
+add_library(tracey_mctraceface_file_sink file_sink.cpp)
+
+target_link_libraries(tracey_mctraceface_file_sink
+  PUBLIC tracey_mctraceface::header)
+
+set_target_properties(tracey_mctraceface_file_sink PROPERTIES
+  EXPORT_NAME file_sink
+  CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
+
+add_library(tracey_mctraceface::file_sink ALIAS tracey_mctraceface_file_sink)
