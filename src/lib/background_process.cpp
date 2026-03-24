@@ -31,16 +31,17 @@ namespace tracey_mctraceface {
       // Child: new process group so signals don't propagate to parent
       setpgid(0, 0);
 
-      // If requested, stop before exec so parent can set up perf
-      if (stopped) { raise(SIGSTOP); }
-
-      // Build argv
+      // Build argv BEFORE stopping — so when resumed, execvp is
+      // immediate and perf doesn't record our setup code.
       std::vector<char*> argv;
       argv.reserve(args.size() + 1);
       for (const auto& a : args) {
         argv.push_back(const_cast<char*>(a.c_str()));
       }
       argv.push_back(nullptr);
+
+      // If requested, stop before exec so parent can set up perf
+      if (stopped) { raise(SIGSTOP); }
 
       execvp(argv[0], argv.data());
       _exit(127);
