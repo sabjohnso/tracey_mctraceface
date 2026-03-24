@@ -10,7 +10,7 @@ macro(tracey_mctraceface_add_test test_name)
   set_target_properties(${exe_name}
     PROPERTIES
     CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
-  add_test(${test_name} ${exe_name})
+  ctest_deps_add_test(NAME ${test_name} TARGET ${exe_name})
 endmacro()
 
 add_subdirectory(unit)
