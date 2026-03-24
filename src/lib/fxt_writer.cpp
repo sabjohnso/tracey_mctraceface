@@ -244,47 +244,6 @@ namespace tracey_mctraceface {
   }
 
   void
-  FxtWriter::write_counter(
-    std::uint64_t pid,
-    std::uint64_t tid,
-    std::string_view category,
-    std::string_view name,
-    std::uint64_t counter_id,
-    std::int64_t value,
-    std::uint64_t timestamp) {
-    auto thread_ref = ensure_thread(pid, tid);
-    auto cat_id = intern_string(category);
-    auto name_id = intern_string(name);
-
-    // Counter event: header(1) + timestamp(1) + counter_id(1) + arg(2) = 5
-    // Arg is Int64: arg_type=3, arg_size=2
-    auto value_name_id = intern_string("value");
-
-    fxt::EventRecordHeader_owned header;
-    header.set_rtype(4);      // event record
-    header.set_rsize(5);      // 2 (header+ts) + 1 (counter_id) + 2 (int64 arg)
-    header.set_event_type(1); // counter
-    header.set_num_args(1);
-    header.set_thread_ref(thread_ref);
-    header.set_category_ref(cat_id);
-    header.set_name_ref(name_id);
-    header.set_timestamp(timestamp);
-    sink_.write(header.buffer());
-
-    // Counter ID word
-    std::uint64_t cid = counter_id;
-    sink_.write({reinterpret_cast<const std::byte*>(&cid), 8});
-
-    // Int64 argument: arg_type=3, arg_size=2, name=value_name_id
-    fxt::ArgInt64_owned arg;
-    arg.set_arg_type(3);
-    arg.set_arg_size(2);
-    arg.set_arg_name(value_name_id);
-    arg.set_value(value);
-    sink_.write(arg.buffer());
-  }
-
-  void
   FxtWriter::write_event_by_id(
     std::uint8_t event_type,
     std::uint8_t thread_ref,

@@ -137,14 +137,3 @@ set_target_properties(tracey_mctraceface_trace_server PROPERTIES
   CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
 
 add_library(tracey_mctraceface::trace_server ALIAS tracey_mctraceface_trace_server)
-
-add_library(tracey_mctraceface_stats_sampler stats_sampler.cpp)
-
-target_link_libraries(tracey_mctraceface_stats_sampler
-  PUBLIC tracey_mctraceface::header)
-
-set_target_properties(tracey_mctraceface_stats_sampler PROPERTIES
-  EXPORT_NAME stats_sampler
-  CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
-
-add_library(tracey_mctraceface::stats_sampler ALIAS tracey_mctraceface_stats_sampler)

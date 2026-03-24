@@ -84,22 +84,6 @@ namespace tracey_mctraceface {
       std::uint16_t name_id,
       std::uint64_t timestamp);
 
-    /**
-     * @brief Write a counter event with an int64 value.
-     *
-     * Counter events appear as line graphs in Perfetto.
-     * Each unique counter_id is a separate time series.
-     */
-    void
-    write_counter(
-      std::uint64_t pid,
-      std::uint64_t tid,
-      std::string_view category,
-      std::string_view name,
-      std::uint64_t counter_id,
-      std::int64_t value,
-      std::uint64_t timestamp);
-
     /** @brief Write a process name kernel object record. */
     void
     write_process_name(std::uint64_t pid, std::string_view name);

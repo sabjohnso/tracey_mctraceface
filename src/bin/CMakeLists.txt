@@ -1,8 +1,3 @@
-add_executable(tracey_mctraceface_trampoline trampoline.cpp)
-set_target_properties(tracey_mctraceface_trampoline PROPERTIES
-  OUTPUT_NAME trampoline
-  CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
-
 json_commander_add_executable(tracey_mctraceface
   SCHEMA ${CMAKE_CURRENT_SOURCE_DIR}/tracey_mctraceface.json
   MAIN tracey_mctraceface::run
@@ -19,7 +14,6 @@ target_link_libraries(tracey_mctraceface PRIVATE
   tracey_mctraceface::subprocess
   tracey_mctraceface::trace_filter
   tracey_mctraceface::trace_server
-  tracey_mctraceface::stats_sampler
   tracey_mctraceface::background_process
   tracey_mctraceface::perf_capabilities)
 

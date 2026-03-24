@@ -7,20 +7,17 @@
 #include <tracey_mctraceface/perf_driver.hpp>
 #include <tracey_mctraceface/perf_script_parser.hpp>
 #include <tracey_mctraceface/stack_reconstructor.hpp>
-#include <tracey_mctraceface/stats_sampler.hpp>
 #include <tracey_mctraceface/subprocess.hpp>
 #include <tracey_mctraceface/trace_filter.hpp>
 #include <tracey_mctraceface/trace_server.hpp>
 
 #include <signal.h>
-#include <sys/wait.h>
 #include <unistd.h>
 
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
-#include <memory>
 #include <string>
 #include <thread>
 
@@ -41,8 +38,7 @@ namespace tracey_mctraceface {
       const std::string& working_dir,
       const std::string& output,
       bool sampling,
-      const TraceFilter::Config& filter_config = {},
-      const std::vector<StatsSampler::Sample>& stats = {}) -> int {
+      const TraceFilter::Config& filter_config = {}) -> int {
       PerfConfig perf_config;
       perf_config.sampling = sampling;
       auto script_args = build_perf_script_args(perf_config, working_dir);
@@ -84,43 +80,6 @@ namespace tracey_mctraceface {
         }
       }
       reconstructor.finish();
-
-      // Write process stats as counter tracks.
-      // Note: counter timestamps use steady_clock, not perf's clock.
-      // They show correct relative timing between samples but may not
-      // align precisely with trace events. This is intentional — the
-      // sampler runs independently to avoid perturbing the trace.
-      if (!stats.empty()) {
-        auto stats_base = stats.front().timestamp_ns;
-        for (const auto& s : stats) {
-          auto ts = s.timestamp_ns - stats_base;
-          writer.write_counter(
-            0,
-            0,
-            "stats",
-            "RSS (bytes)",
-            1,
-            static_cast<std::int64_t>(s.rss_bytes),
-            ts);
-          writer.write_counter(
-            0,
-            0,
-            "stats",
-            "I/O Read (bytes)",
-            2,
-            static_cast<std::int64_t>(s.io_read_bytes),
-            ts);
-          writer.write_counter(
-            0,
-            0,
-            "stats",
-            "I/O Write (bytes)",
-            3,
-            static_cast<std::int64_t>(s.io_write_bytes),
-            ts);
-        }
-        std::cerr << "Wrote " << stats.size() << " stat samples\n";
-      }
 
       if (filter.start_symbol_missing()) {
         std::cerr << "warning: start symbol '" << filter_config.start_symbol
@@ -207,22 +166,13 @@ namespace tracey_mctraceface {
     }
 
     auto
-    find_trampoline() -> std::string {
-      // Look for trampoline next to the main executable
-      auto self = std::filesystem::read_symlink("/proc/self/exe");
-      auto trampoline = self.parent_path() / "trampoline";
-      if (std::filesystem::exists(trampoline)) return trampoline.string();
-      return "trampoline"; // fall back to PATH
-    }
-
-    auto
     run_run(const nlohmann::json& config) -> int {
       auto sub = config.value("run", nlohmann::json::object());
       auto program = sub.value("program", "");
       auto output =
         std::filesystem::absolute(sub.value("output", "trace.fxt")).string();
 
-      // Collect program args
+      // Collect program args (without the program name itself)
       std::vector<std::string> program_args;
       if (sub.contains("args") && sub["args"].is_array()) {
         for (const auto& arg : sub["args"]) {
@@ -246,98 +196,25 @@ namespace tracey_mctraceface {
       std::filesystem::create_directories(work_dir);
       perf_config.working_directory = work_dir.string();
 
-      // 3. Launch the trampoline.
-      //    The trampoline is a tiny binary that waits for a byte on
-      //    stdin, then execs into the target. This gives us a known
-      //    PID to attach perf and the stats sampler to BEFORE the
-      //    target starts, with no tracey_mctraceface code in the trace.
-      std::vector<std::string> trampoline_args;
-      trampoline_args.push_back(find_trampoline());
-      trampoline_args.push_back(program);
-      for (const auto& a : program_args) {
-        trampoline_args.push_back(a);
-      }
-
-      // Use Subprocess to get a pipe to the trampoline's stdin
-      // Actually, Subprocess captures stdout. We need stdin control.
-      // Use raw fork/pipe for the trampoline.
-      int go_pipe[2];
-      if (pipe(go_pipe) != 0) { throw std::runtime_error("pipe() failed"); }
-
-      auto trampoline_pid = fork();
-      if (trampoline_pid < 0) { throw std::runtime_error("fork() failed"); }
-
-      if (trampoline_pid == 0) {
-        // Child: wire pipe read end to stdin
-        close(go_pipe[1]);
-        dup2(go_pipe[0], STDIN_FILENO);
-        close(go_pipe[0]);
-
-        std::vector<char*> argv;
-        for (auto& a : trampoline_args) {
-          argv.push_back(a.data());
-        }
-        argv.push_back(nullptr);
-        execvp(argv[0], argv.data());
-        _exit(127);
-      }
-
-      // Parent: keep write end
-      close(go_pipe[0]);
-      auto target_pid = std::to_string(trampoline_pid);
-
-      // 4. Attach perf to the trampoline PID (it will follow exec)
+      // 3. Let perf record launch the target program directly.
+      //    This avoids tracing our own setup code — perf manages
+      //    the child process and starts tracing after exec.
       auto record_args =
-        build_perf_record_args(perf_config, caps, {target_pid});
-      std::cerr << "Recording " << program << " (pid " << target_pid
-                << ") ...\n";
+        build_perf_record_args(perf_config, caps, program, program_args);
+      std::cerr << "Recording " << program << " ...\n";
       BackgroundProcess perf_record(record_args);
 
-      // 5. Start stats sampler if requested
-      auto counters_str = sub.value("counters", "");
-      bool want_stats = counters_str.find("rss") != std::string::npos ||
-                        counters_str.find("io") != std::string::npos;
-      auto interval_ms = sub.value("counter-interval", 10);
-
-      std::unique_ptr<StatsSampler> sampler;
-      if (want_stats) {
-        sampler = std::make_unique<StatsSampler>(
-          trampoline_pid, std::chrono::milliseconds(interval_ms));
-        sampler->start();
-        std::cerr << "Stats sampler started (interval " << interval_ms
-                  << " ms)\n";
-      }
-
-      // Brief pause for perf to attach
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-      // 6. Signal the trampoline to exec into the target
-      char go = 1;
-      write(go_pipe[1], &go, 1);
-      close(go_pipe[1]);
-
-      // 7. Wait for perf (and the target) to finish
+      // 4. Wait for perf (and the target) to finish
       auto perf_exit = perf_record.wait();
-
-      // Also reap the trampoline/target process
-      waitpid(trampoline_pid, nullptr, WNOHANG);
-
       std::cerr << "perf record exited with code " << perf_exit << '\n';
 
-      std::vector<StatsSampler::Sample> stats;
-      if (sampler) {
-        sampler->stop();
-        stats = sampler->samples();
-      }
-
-      // 8. Decode the trace
+      // 5. Decode the trace
       std::cerr << "Decoding trace ...\n";
       auto result = decode_perf_data(
         work_dir.string(),
         output,
         perf_config.sampling,
-        build_filter_config(sub),
-        stats);
+        build_filter_config(sub));
       maybe_serve(sub, output);
       return result;
     }
@@ -379,23 +256,7 @@ namespace tracey_mctraceface {
       // Brief pause for perf to attach
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-      // 4. Start stats sampler if requested (attach knows the target PID)
-      auto counters_str = sub.value("counters", "");
-      bool want_stats = counters_str.find("rss") != std::string::npos ||
-                        counters_str.find("io") != std::string::npos;
-      auto interval_ms = sub.value("counter-interval", 10);
-
-      std::unique_ptr<StatsSampler> sampler;
-      if (want_stats && !pids.empty()) {
-        auto target_pid = static_cast<pid_t>(std::stoi(pids[0]));
-        sampler = std::make_unique<StatsSampler>(
-          target_pid, std::chrono::milliseconds(interval_ms));
-        sampler->start();
-        std::cerr << "Stats sampler started for PID " << pids[0]
-                  << " (interval " << interval_ms << " ms)\n";
-      }
-
-      // 5. Wait for Ctrl+C
+      // 4. Wait for Ctrl+C
       std::cerr << "Recording. Press Ctrl+C to stop.\n";
       g_interrupted = 0;
 
@@ -431,20 +292,13 @@ namespace tracey_mctraceface {
       perf_record.send_signal(SIGTERM);
       perf_record.wait();
 
-      std::vector<StatsSampler::Sample> stats;
-      if (sampler) {
-        sampler->stop();
-        stats = sampler->samples();
-      }
-
       // 6. Decode
       std::cerr << "Decoding trace ...\n";
       auto result = decode_perf_data(
         work_dir.string(),
         output,
         perf_config.sampling,
-        build_filter_config(sub),
-        stats);
+        build_filter_config(sub));
       maybe_serve(sub, output);
       return result;
     }

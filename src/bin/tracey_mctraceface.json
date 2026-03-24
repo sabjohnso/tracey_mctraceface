@@ -169,29 +169,6 @@
           ]
         },
         {
-          "kind": "option",
-          "names": [
-            "counters"
-          ],
-          "doc": [
-            "Comma-separated performance counters to collect: rss,io,cache,fp."
-          ],
-          "type": "string",
-          "docv": "LIST"
-        },
-        {
-          "kind": "option",
-          "names": [
-            "counter-interval"
-          ],
-          "doc": [
-            "Polling interval for process stats in milliseconds."
-          ],
-          "type": "int",
-          "default": 10,
-          "docv": "MS"
-        },
-        {
           "kind": "positional",
           "name": "program",
           "doc": [
@@ -387,29 +364,6 @@
           "doc": [
             "Collect multiple start-to-end regions for comparison."
           ]
-        },
-        {
-          "kind": "option",
-          "names": [
-            "counters"
-          ],
-          "doc": [
-            "Comma-separated performance counters to collect: rss,io,cache,fp."
-          ],
-          "type": "string",
-          "docv": "LIST"
-        },
-        {
-          "kind": "option",
-          "names": [
-            "counter-interval"
-          ],
-          "doc": [
-            "Polling interval for process stats in milliseconds."
-          ],
-          "type": "int",
-          "default": 10,
-          "docv": "MS"
         }
       ]
     },
