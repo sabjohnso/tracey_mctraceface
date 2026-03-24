@@ -210,8 +210,8 @@ namespace tracey_mctraceface {
         } else if constexpr (std::is_same_v<T, DecodeError>) {
           if (e.time_ns.has_value()) {
             auto time = map_time(*e.time_ns);
-            // Decode error: clear all stacks for this thread
             auto& ti = get_thread(e.pid, e.tid);
+            ti.last_event_time = time;
             clear_all_callstacks(ti, e.pid, e.tid, time);
           }
         }
@@ -223,6 +223,7 @@ namespace tracey_mctraceface {
   StackReconstructor::process_branch(const OkEvent& ok, const BranchData& br) {
     auto time = map_time(ok.time_ns);
     auto& ti = get_thread(ok.pid, ok.tid);
+    ti.last_event_time = time;
 
     auto trace_state = br.trace_state;
     auto kind = br.kind;
@@ -299,6 +300,7 @@ namespace tracey_mctraceface {
     const OkEvent& ok, const StacktraceSampleData& st) {
     auto time = map_time(ok.time_ns);
     auto& ti = get_thread(ok.pid, ok.tid);
+    ti.last_event_time = time;
 
     auto& current = ti.callstack.stack;
     auto& sample = st.callstack;
