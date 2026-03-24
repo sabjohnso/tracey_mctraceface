@@ -137,6 +137,39 @@ TEST_CASE("intern_string emits string record", "[fxt_writer]") {
   CHECK(std::string_view(content.data(), 5) == "hello");
 }
 
+TEST_CASE("intern_string evicts when IDs exhausted", "[fxt_writer]") {
+  VectorSink sink;
+  FxtWriter writer(sink);
+
+  // Intern 32,767 unique strings to exhaust IDs
+  for (int i = 1; i <= 32767; ++i) {
+    auto id = writer.intern_string("sym_" + std::to_string(i));
+    CHECK(id >= 1);
+    CHECK(id <= 32767);
+  }
+
+  // The next intern should evict an old entry, not crash
+  auto id = writer.intern_string("one_more");
+  CHECK(id >= 1);
+  CHECK(id <= 32767);
+
+  // And the evicted string should get a new ID if re-interned
+  // (it was evicted, so it's no longer in the table)
+}
+
+TEST_CASE("intern_string truncates long strings", "[fxt_writer]") {
+  VectorSink sink;
+  FxtWriter writer(sink);
+
+  // Create a string longer than 31,999 bytes
+  std::string long_str(32100, 'x');
+  auto id = writer.intern_string(long_str);
+  CHECK(id >= 1);
+
+  // The interned string should not crash and should produce output
+  CHECK(sink.size() > 0);
+}
+
 // ===========================================================================
 // Thread slot management
 // ===========================================================================

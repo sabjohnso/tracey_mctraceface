@@ -84,8 +84,11 @@ namespace tracey_mctraceface {
     OutputSink& sink_;
 
     // String interning: string -> 15-bit ID (1..32767), 0 = empty
+    static constexpr std::uint16_t max_string_id_ = 32767;
+    static constexpr std::size_t max_string_length_ = 31999;
     std::unordered_map<std::string, std::uint16_t> string_table_;
     std::uint16_t next_string_id_ = 1;
+    bool string_id_warning_issued_ = false;
 
     // Thread slots: circular buffer of 255 entries
     struct ThreadKey {

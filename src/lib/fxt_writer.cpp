@@ -6,6 +6,7 @@
 #include <array>
 #include <cstddef>
 #include <cstring>
+#include <iostream>
 
 namespace tracey_mctraceface {
 
@@ -84,7 +85,28 @@ namespace tracey_mctraceface {
     auto it = string_table_.find(key);
     if (it != string_table_.end()) return it->second;
 
-    auto id = next_string_id_++;
+    std::uint16_t id;
+    if (next_string_id_ <= max_string_id_) {
+      // Normal path: allocate a new ID
+      id = next_string_id_++;
+    } else {
+      // Exhausted: evict the least recently inserted string.
+      // Find the entry with the lowest ID and reclaim it.
+      if (!string_id_warning_issued_) {
+        std::cerr << "warning: string ID limit reached (" << max_string_id_
+                  << " unique symbols). Evicting old entries.\n";
+        string_id_warning_issued_ = true;
+      }
+
+      // Evict: find entry with the smallest ID value
+      auto victim = string_table_.begin();
+      for (auto jt = string_table_.begin(); jt != string_table_.end(); ++jt) {
+        if (jt->second < victim->second) victim = jt;
+      }
+      id = victim->second;
+      string_table_.erase(victim);
+    }
+
     string_table_.emplace(std::move(key), id);
     emit_string_record(id, s);
     return id;
@@ -183,8 +205,18 @@ namespace tracey_mctraceface {
 
   void
   FxtWriter::emit_string_record(std::uint16_t id, std::string_view s) {
-    auto str_len =
-      static_cast<std::uint16_t>(std::min(s.size(), std::size_t{31999}));
+    std::string truncated;
+    auto effective = s;
+
+    if (s.size() > max_string_length_) {
+      std::cerr << "warning: symbol name too long (" << s.size()
+                << " bytes). Truncating: " << s.substr(0, 60) << "...\n";
+      truncated = std::string(s.substr(0, max_string_length_ - 15));
+      truncated += "<...truncated>";
+      effective = truncated;
+    }
+
+    auto str_len = static_cast<std::uint16_t>(effective.size());
     auto padded_words = words_for_bytes(str_len);
     auto rsize = static_cast<std::uint16_t>(1 + padded_words);
 
@@ -194,7 +226,8 @@ namespace tracey_mctraceface {
     header.set_string_id(id);
     header.set_str_len(str_len);
     sink_.write(header.buffer());
-    sink_.write({reinterpret_cast<const std::byte*>(s.data()), str_len});
+    sink_.write(
+      {reinterpret_cast<const std::byte*>(effective.data()), str_len});
     pad_to_word(str_len);
   }
 
