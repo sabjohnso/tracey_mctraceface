@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace tracey_mctraceface {
@@ -100,6 +101,7 @@ namespace tracey_mctraceface {
     };
 
     std::unordered_map<ThreadKey, std::uint8_t, ThreadKeyHash> thread_table_;
+    std::unordered_set<std::uint64_t> named_processes_;
     std::uint8_t next_thread_slot_ = 0;
     static constexpr std::uint8_t max_thread_slots_ = 255;
 

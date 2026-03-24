@@ -112,6 +112,13 @@ namespace tracey_mctraceface {
 
     thread_table_.emplace(key, slot);
     emit_thread_record(slot, pid, tid);
+
+    // Auto-emit kernel object records for Perfetto display
+    if (named_processes_.insert(pid).second) {
+      write_process_name(pid, "[pid=" + std::to_string(pid) + "]");
+    }
+    write_thread_name(pid, tid, "[tid=" + std::to_string(tid) + "]");
+
     return slot;
   }
 

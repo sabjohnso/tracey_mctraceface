@@ -147,9 +147,12 @@ TEST_CASE(
   CHECK(slot >= 1);
   CHECK(slot <= 255);
 
-  // Thread record: 3 words = 24 bytes
-  REQUIRE(sink.size() == 24);
+  // Thread record (24 bytes) + kernel object records for process/thread
+  // names + string records for the names
+  REQUIRE(sink.size() > 24);
+  CHECK(sink.size() % 8 == 0);
 
+  // First record should be the thread record
   std::uint64_t header = read_word(sink.data(), 0);
   CHECK((header & 0xF) == 3);              // rtype=3 (thread)
   CHECK(((header >> 4) & 0xFFF) == 3);     // rsize=3
