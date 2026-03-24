@@ -52,9 +52,49 @@ namespace tracey_mctraceface {
       }
     }
 
+    // Local HTML page that:
+    // 1. Fetches /trace from the same localhost origin (no CORS issues)
+    // 2. Opens Perfetto UI in a new tab
+    // 3. Sends the trace via postMessage (Perfetto's supported API)
+    auto
+    opener_html() -> std::string {
+      return R"(<!DOCTYPE html>
+<html><body>
+<p id="status">Loading trace...</p>
+<script>
+(async () => {
+  const status = document.getElementById('status');
+  try {
+    const resp = await fetch('/trace');
+    const blob = await resp.blob();
+    const buf = await blob.arrayBuffer();
+    status.textContent = 'Opening Perfetto...';
+
+    const win = window.open('https://ui.perfetto.dev');
+    if (!win) { status.textContent = 'Popup blocked. Allow popups and reload.'; return; }
+
+    const timer = setInterval(() => {
+      win.postMessage('PING', 'https://ui.perfetto.dev');
+    }, 200);
+
+    window.addEventListener('message', (evt) => {
+      if (evt.data !== 'PONG') return;
+      clearInterval(timer);
+      win.postMessage({
+        perfetto: { buffer: buf, title: 'tracey_mctraceface', keepApiOpen: false }
+      }, 'https://ui.perfetto.dev');
+      status.textContent = 'Trace sent to Perfetto. You can close this tab.';
+    });
+  } catch (e) {
+    status.textContent = 'Error: ' + e.message;
+  }
+})();
+</script>
+</body></html>)";
+    }
+
     void
     handle_request(int client_fd, const std::vector<char>& trace_data) {
-      // Read the request (we only need the first line)
       std::array<char, 4096> buf{};
       auto n = ::recv(client_fd, buf.data(), buf.size() - 1, 0);
       if (n <= 0) {
@@ -64,37 +104,35 @@ namespace tracey_mctraceface {
       buf[n] = '\0';
       std::string_view request(buf.data(), static_cast<std::size_t>(n));
 
-      // CORS preflight
-      if (request.starts_with("OPTIONS")) {
-        std::string response = "HTTP/1.1 204 No Content\r\n"
-                               "Access-Control-Allow-Origin: *\r\n"
-                               "Access-Control-Allow-Methods: GET, OPTIONS\r\n"
-                               "Access-Control-Allow-Headers: *\r\n"
-                               "Content-Length: 0\r\n"
-                               "\r\n";
-        send_all(client_fd, response);
-        ::close(client_fd);
-        return;
-      }
+      // Extract path from "GET /path HTTP/1.1"
+      auto path_start = request.find(' ');
+      auto path_end = request.find(' ', path_start + 1);
+      auto path = (path_start != std::string_view::npos &&
+                   path_end != std::string_view::npos)
+                    ? request.substr(path_start + 1, path_end - path_start - 1)
+                    : std::string_view("/");
 
-      // Serve the trace file
-      if (request.starts_with("GET")) {
+      if (request.starts_with("GET") && path.starts_with("/trace")) {
+        // Serve the raw trace binary
         auto header = "HTTP/1.1 200 OK\r\n"
-                      "Access-Control-Allow-Origin: *\r\n"
                       "Content-Type: application/octet-stream\r\n"
                       "Content-Length: " +
-                      std::to_string(trace_data.size()) +
-                      "\r\n"
-                      "\r\n";
+                      std::to_string(trace_data.size()) + "\r\n\r\n";
         send_all(client_fd, header);
         send_all(client_fd, trace_data);
-        ::close(client_fd);
-        return;
+      } else if (request.starts_with("GET")) {
+        // Serve the opener page (fetches /trace, posts to Perfetto)
+        auto html = opener_html();
+        auto header = "HTTP/1.1 200 OK\r\n"
+                      "Content-Type: text/html\r\n"
+                      "Content-Length: " +
+                      std::to_string(html.size()) + "\r\n\r\n";
+        send_all(client_fd, header);
+        send_all(client_fd, html);
+      } else {
+        send_all(client_fd, std::string("HTTP/1.1 400 Bad Request\r\n\r\n"));
       }
 
-      // Unknown request
-      std::string response = "HTTP/1.1 400 Bad Request\r\n\r\n";
-      send_all(client_fd, response);
       ::close(client_fd);
     }
 
@@ -144,17 +182,14 @@ namespace tracey_mctraceface {
       return;
     }
 
-    // Open Perfetto UI in the default browser
-    auto url = "https://ui.perfetto.dev/#!/?url=http://127.0.0.1:" +
-               std::to_string(port) + "/trace";
-    std::cerr << "Serving trace at http://127.0.0.1:" << port << "/\n";
-    std::cerr << "Opening " << url << "\n";
+    auto url = "http://127.0.0.1:" + std::to_string(port);
+    std::cerr << "Serving trace at " << url << "\n";
+    std::cerr << "Opening browser...\n";
     std::cerr << "Press Ctrl+C to stop.\n";
 
     auto cmd = "xdg-open '" + url + "' 2>/dev/null &";
     std::system(cmd.c_str());
 
-    // Handle SIGINT for clean shutdown
     struct sigaction sa{};
     sa.sa_handler = server_sigint_handler;
     sigemptyset(&sa.sa_mask);
@@ -162,7 +197,6 @@ namespace tracey_mctraceface {
     server_running = 1;
 
     while (server_running != 0) {
-      // Use a timeout so we can check server_running
       fd_set readfds;
       FD_ZERO(&readfds);
       FD_SET(server_fd, &readfds);
