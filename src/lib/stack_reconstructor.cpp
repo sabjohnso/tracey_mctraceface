@@ -228,24 +228,24 @@ namespace tracey_mctraceface {
     auto trace_state = br.trace_state;
     auto kind = br.kind;
 
-    // Trace end: mark entering untraced code
-    if (trace_state == TraceState::End && !kind.has_value()) {
-      Location untraced;
-      untraced.symbol = "[untraced]";
-      call(ti, ok.pid, ok.tid, time, untraced);
+    // Handle trace_state first — it takes priority over kind.
+    // When the trace ends, the CPU stops recording regardless of the
+    // branch type that caused it.
+    if (trace_state == TraceState::End) {
+      // Clear all stacks — we're leaving traced code
+      clear_all_callstacks(ti, ok.pid, ok.tid, time);
+      ti.callstack.create_time = time;
       return;
     }
 
-    // Trace start: entering traced code
-    if (trace_state == TraceState::Start && !kind.has_value()) {
+    if (trace_state == TraceState::Start) {
       if (ti.callstack.stack.empty()) {
         call(ti, ok.pid, ok.tid, time, br.dst);
       } else {
-        // Return from untraced, then enter new code
-        ret(ti, ok.pid, ok.tid, time);
         check_current_symbol(ti, ok.pid, ok.tid, time, br.dst);
       }
-      return;
+      // If there's also a kind (e.g., tr strt jmp), process it below
+      if (!kind.has_value()) return;
     }
 
     if (!kind.has_value()) return;
