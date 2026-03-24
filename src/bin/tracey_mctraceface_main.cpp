@@ -1,7 +1,7 @@
 #include "tracey_mctraceface_main.hpp"
 
 #include <tracey_mctraceface/background_process.hpp>
-#include <tracey_mctraceface/file_sink.hpp>
+#include <tracey_mctraceface/compressed_sink.hpp>
 #include <tracey_mctraceface/fxt_writer.hpp>
 #include <tracey_mctraceface/perf_capabilities.hpp>
 #include <tracey_mctraceface/perf_driver.hpp>
@@ -44,8 +44,8 @@ namespace tracey_mctraceface {
 
       Subprocess perf_script(script_args);
 
-      FileSink sink(output);
-      FxtWriter writer(sink);
+      auto sink = make_sink(output);
+      FxtWriter writer(*sink);
 
       // Use current wall clock as base_time so Perfetto has a time reference
       auto now = std::chrono::system_clock::now();

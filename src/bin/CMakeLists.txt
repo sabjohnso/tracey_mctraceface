@@ -10,7 +10,7 @@ target_link_libraries(tracey_mctraceface PRIVATE
   tracey_mctraceface::stack_reconstructor
   tracey_mctraceface::perf_driver
   tracey_mctraceface::perf_capabilities
-  tracey_mctraceface::file_sink
+  tracey_mctraceface::compressed_sink
   tracey_mctraceface::subprocess
   tracey_mctraceface::trace_filter
   tracey_mctraceface::background_process

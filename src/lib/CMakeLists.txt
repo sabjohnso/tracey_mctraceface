@@ -107,3 +107,22 @@ set_target_properties(tracey_mctraceface_trace_filter PROPERTIES
   CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
 
 add_library(tracey_mctraceface::trace_filter ALIAS tracey_mctraceface_trace_filter)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(ZLIB REQUIRED zlib)
+pkg_check_modules(ZSTD REQUIRED libzstd)
+
+add_library(tracey_mctraceface_compressed_sink compressed_sink.cpp)
+
+target_link_libraries(tracey_mctraceface_compressed_sink
+  PUBLIC tracey_mctraceface::file_sink
+  PRIVATE ${ZLIB_LIBRARIES} ${ZSTD_LIBRARIES})
+
+target_include_directories(tracey_mctraceface_compressed_sink
+  PRIVATE ${ZLIB_INCLUDE_DIRS} ${ZSTD_INCLUDE_DIRS})
+
+set_target_properties(tracey_mctraceface_compressed_sink PROPERTIES
+  EXPORT_NAME compressed_sink
+  CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
+
+add_library(tracey_mctraceface::compressed_sink ALIAS tracey_mctraceface_compressed_sink)
