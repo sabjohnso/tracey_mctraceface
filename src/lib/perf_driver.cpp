@@ -31,44 +31,68 @@ namespace tracey_mctraceface {
     return "";
   }
 
+  namespace {
+
+    auto
+    build_common_record_args(
+      const PerfConfig& config, const PerfCapabilities& caps)
+      -> std::vector<std::string> {
+      std::vector<std::string> args = {"perf", "record"};
+
+      // Output file
+      auto data_file = config.working_directory + "/perf.data";
+      args.push_back("-o");
+      args.push_back(data_file);
+      args.push_back("--timestamp");
+
+      // Event
+      auto sel = scope_selector(config.trace_scope);
+      if (config.sampling) {
+        args.push_back("--event=cycles/freq=10000/" + sel);
+      } else {
+        auto tc = timer_config(config.timer_resolution);
+        auto event = std::string("--event=intel_pt/");
+        if (!tc.empty())
+          event += tc + "/";
+        else
+          event += "/";
+        event += sel;
+        args.push_back(event);
+      }
+
+      // Snapshot control
+      if (!config.full_execution && !config.sampling) {
+        if (caps.snapshot_on_exit) {
+          args.push_back("--snapshot=e");
+        } else {
+          args.push_back("--snapshot");
+        }
+      }
+
+      // Snapshot size
+      if (config.snapshot_size_pages > 0 && !config.sampling) {
+        args.push_back("-m," + std::to_string(config.snapshot_size_pages));
+      }
+
+      // Kcore
+      if (
+        config.trace_scope != TraceScope::Userspace && caps.kcore &&
+        !config.sampling) {
+        args.push_back("--kcore");
+      }
+
+      return args;
+    }
+
+  } // namespace
+
   auto
   build_perf_record_args(
     const PerfConfig& config,
     const PerfCapabilities& caps,
     const std::vector<std::string>& pids) -> std::vector<std::string> {
-    std::vector<std::string> args = {"perf", "record"};
+    auto args = build_common_record_args(config, caps);
 
-    // Output file
-    auto data_file = config.working_directory + "/perf.data";
-    args.push_back("-o");
-    args.push_back(data_file);
-    args.push_back("--timestamp");
-
-    // Event
-    auto sel = scope_selector(config.trace_scope);
-    if (config.sampling) {
-      args.push_back("--event=cycles/freq=10000/" + sel);
-    } else {
-      auto tc = timer_config(config.timer_resolution);
-      auto event = std::string("--event=intel_pt/");
-      if (!tc.empty())
-        event += tc + "/";
-      else
-        event += "/";
-      event += sel;
-      args.push_back(event);
-    }
-
-    // Snapshot control
-    if (!config.full_execution && !config.sampling) {
-      if (caps.snapshot_on_exit) {
-        args.push_back("--snapshot=e");
-      } else {
-        args.push_back("--snapshot");
-      }
-    }
-
-    // Threading
     if (!pids.empty()) {
       std::string pid_list;
       for (std::size_t i = 0; i < pids.size(); ++i) {
@@ -84,16 +108,22 @@ namespace tracey_mctraceface {
       args.push_back(pid_list);
     }
 
-    // Snapshot size
-    if (config.snapshot_size_pages > 0 && !config.sampling) {
-      args.push_back("-m," + std::to_string(config.snapshot_size_pages));
-    }
+    return args;
+  }
 
-    // Kcore
-    if (
-      config.trace_scope != TraceScope::Userspace && caps.kcore &&
-      !config.sampling) {
-      args.push_back("--kcore");
+  auto
+  build_perf_record_args(
+    const PerfConfig& config,
+    const PerfCapabilities& caps,
+    const std::string& program,
+    const std::vector<std::string>& program_args) -> std::vector<std::string> {
+    auto args = build_common_record_args(config, caps);
+
+    // Separator between perf args and the target command
+    args.push_back("--");
+    args.push_back(program);
+    for (const auto& a : program_args) {
+      args.push_back(a);
     }
 
     return args;

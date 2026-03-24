@@ -66,6 +66,27 @@ TEST_CASE("build_perf_record_args for sampling", "[perf_driver]") {
   CHECK(!contains(args, "--snapshot=e"));
 }
 
+TEST_CASE("build_perf_record_args with program launch", "[perf_driver]") {
+  PerfConfig config;
+  config.working_directory = "/tmp/trace";
+
+  PerfCapabilities caps;
+  caps.has_intel_pt = true;
+  caps.snapshot_on_exit = true;
+
+  auto args =
+    build_perf_record_args(config, caps, "./myprogram", {"arg1", "arg2"});
+
+  CHECK(contains(args, "--"));
+  CHECK(contains(args, "./myprogram"));
+  CHECK(contains(args, "arg1"));
+  CHECK(contains(args, "arg2"));
+  // Should NOT have -t or -p (perf manages the child)
+  CHECK(!contains(args, "-t"));
+  CHECK(!contains(args, "-p"));
+  CHECK(!contains(args, "--per-thread"));
+}
+
 TEST_CASE("build_perf_script_args for Intel PT", "[perf_driver]") {
   PerfConfig config;
 

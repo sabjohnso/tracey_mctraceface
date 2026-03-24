@@ -140,9 +140,8 @@ namespace tracey_mctraceface {
       auto output =
         std::filesystem::absolute(sub.value("output", "trace.fxt")).string();
 
-      // Collect program args
+      // Collect program args (without the program name itself)
       std::vector<std::string> program_args;
-      program_args.push_back(program);
       if (sub.contains("args") && sub["args"].is_array()) {
         for (const auto& arg : sub["args"]) {
           program_args.push_back(arg.get<std::string>());
@@ -165,41 +164,19 @@ namespace tracey_mctraceface {
       std::filesystem::create_directories(work_dir);
       perf_config.working_directory = work_dir.string();
 
-      // 4. Fork the target program (stopped)
-      std::cerr << "Starting " << program << " ...\n";
-      BackgroundProcess target(program_args, true);
-      auto target_pid = std::to_string(target.pid());
-
-      // 5. Start perf record
+      // 3. Let perf record launch the target program directly.
+      //    This avoids tracing our own setup code — perf manages
+      //    the child process and starts tracing after exec.
       auto record_args =
-        build_perf_record_args(perf_config, caps, {target_pid});
-      std::cerr << "Recording with perf (pid " << target_pid << ") ...\n";
+        build_perf_record_args(perf_config, caps, program, program_args);
+      std::cerr << "Recording " << program << " ...\n";
       BackgroundProcess perf_record(record_args);
 
-      // Brief pause for perf to attach
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+      // 4. Wait for perf (and the target) to finish
+      auto perf_exit = perf_record.wait();
+      std::cerr << "perf record exited with code " << perf_exit << '\n';
 
-      // 6. Resume the target
-      target.send_signal(SIGCONT);
-
-      // 7. Wait for target to exit
-      auto target_exit = target.wait();
-      std::cerr << "Program exited with code " << target_exit << '\n';
-
-      // 8. Signal perf to snapshot and stop
-      if (!perf_config.full_execution && !perf_config.sampling) {
-        if (caps.snapshot_on_exit) {
-          perf_record.send_signal(SIGINT);
-        } else {
-          perf_record.send_signal(SIGUSR2);
-        }
-        // Brief pause for snapshot
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-      }
-      perf_record.send_signal(SIGTERM);
-      perf_record.wait();
-
-      // 9. Decode the trace
+      // 5. Decode the trace
       std::cerr << "Decoding trace ...\n";
       return decode_perf_data(work_dir.string(), output, perf_config.sampling);
     }

@@ -26,13 +26,26 @@ namespace tracey_mctraceface {
   };
 
   /**
-   * @brief Build the argument vector for `perf record`.
+   * @brief Build the argument vector for `perf record` attaching to PIDs.
    */
   auto
   build_perf_record_args(
     const PerfConfig& config,
     const PerfCapabilities& caps,
     const std::vector<std::string>& pids) -> std::vector<std::string>;
+
+  /**
+   * @brief Build the argument vector for `perf record` launching a program.
+   *
+   * Perf manages the child process lifecycle, avoiding tracing of
+   * our own setup code.
+   */
+  auto
+  build_perf_record_args(
+    const PerfConfig& config,
+    const PerfCapabilities& caps,
+    const std::string& program,
+    const std::vector<std::string>& program_args) -> std::vector<std::string>;
 
   /**
    * @brief Build the argument vector for `perf script`.
