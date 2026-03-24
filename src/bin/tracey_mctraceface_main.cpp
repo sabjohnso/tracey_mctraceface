@@ -84,10 +84,12 @@ namespace tracey_mctraceface {
       }
       reconstructor.finish();
 
-      // Write process stats as counter tracks
+      // Write process stats as counter tracks.
+      // Note: counter timestamps use steady_clock, not perf's clock.
+      // They show correct relative timing between samples but may not
+      // align precisely with trace events. This is intentional — the
+      // sampler runs independently to avoid perturbing the trace.
       if (!stats.empty()) {
-        // Use pid=0, tid=0 for process-level counters
-        // Base time is the first stats sample's timestamp
         auto stats_base = stats.front().timestamp_ns;
         for (const auto& s : stats) {
           auto ts = s.timestamp_ns - stats_base;
@@ -242,41 +244,25 @@ namespace tracey_mctraceface {
       std::cerr << "Recording " << program << " ...\n";
       BackgroundProcess perf_record(record_args);
 
-      // 4. Start stats sampler if requested
+      // Warn if counters requested in run mode
       auto counters_str = sub.value("counters", "");
-      bool want_stats = counters_str.find("rss") != std::string::npos ||
-                        counters_str.find("io") != std::string::npos;
-      auto interval_ms = sub.value("counter-interval", 10);
-
-      std::unique_ptr<StatsSampler> sampler;
-      if (want_stats) {
-        // Perf record's child PID = perf_record.pid()'s child.
-        // We sample perf's PID; /proc reads propagate to the child.
-        sampler = std::make_unique<StatsSampler>(
-          perf_record.pid(), std::chrono::milliseconds(interval_ms));
-        sampler->start();
-        std::cerr << "Stats sampler started (interval " << interval_ms
-                  << " ms)\n";
+      if (!counters_str.empty()) {
+        std::cerr << "warning: --counters is only supported in attach "
+                     "mode (run mode cannot determine the target PID "
+                     "for /proc sampling). Ignoring.\n";
       }
 
-      // 5. Wait for perf (and the target) to finish
+      // 4. Wait for perf (and the target) to finish
       auto perf_exit = perf_record.wait();
       std::cerr << "perf record exited with code " << perf_exit << '\n';
 
-      std::vector<StatsSampler::Sample> stats;
-      if (sampler) {
-        sampler->stop();
-        stats = sampler->samples();
-      }
-
-      // 6. Decode the trace
+      // 5. Decode the trace
       std::cerr << "Decoding trace ...\n";
       auto result = decode_perf_data(
         work_dir.string(),
         output,
         perf_config.sampling,
-        build_filter_config(sub),
-        stats);
+        build_filter_config(sub));
       maybe_serve(sub, output);
       return result;
     }
@@ -318,7 +304,23 @@ namespace tracey_mctraceface {
       // Brief pause for perf to attach
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-      // 4. Wait for Ctrl+C
+      // 4. Start stats sampler if requested (attach knows the target PID)
+      auto counters_str = sub.value("counters", "");
+      bool want_stats = counters_str.find("rss") != std::string::npos ||
+                        counters_str.find("io") != std::string::npos;
+      auto interval_ms = sub.value("counter-interval", 10);
+
+      std::unique_ptr<StatsSampler> sampler;
+      if (want_stats && !pids.empty()) {
+        auto target_pid = static_cast<pid_t>(std::stoi(pids[0]));
+        sampler = std::make_unique<StatsSampler>(
+          target_pid, std::chrono::milliseconds(interval_ms));
+        sampler->start();
+        std::cerr << "Stats sampler started for PID " << pids[0]
+                  << " (interval " << interval_ms << " ms)\n";
+      }
+
+      // 5. Wait for Ctrl+C
       std::cerr << "Recording. Press Ctrl+C to stop.\n";
       g_interrupted = 0;
 
@@ -354,13 +356,20 @@ namespace tracey_mctraceface {
       perf_record.send_signal(SIGTERM);
       perf_record.wait();
 
+      std::vector<StatsSampler::Sample> stats;
+      if (sampler) {
+        sampler->stop();
+        stats = sampler->samples();
+      }
+
       // 6. Decode
       std::cerr << "Decoding trace ...\n";
       auto result = decode_perf_data(
         work_dir.string(),
         output,
         perf_config.sampling,
-        build_filter_config(sub));
+        build_filter_config(sub),
+        stats);
       maybe_serve(sub, output);
       return result;
     }
