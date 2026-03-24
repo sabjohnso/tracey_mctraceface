@@ -59,36 +59,54 @@ namespace tracey_mctraceface {
     auto
     opener_html() -> std::string {
       return R"(<!DOCTYPE html>
-<html><body>
+<html><body style="font-family:sans-serif; margin:2em;">
+<h2>tracey_mctraceface</h2>
 <p id="status">Loading trace...</p>
+<button id="open" style="display:none; font-size:1.2em; padding:0.5em 1em; cursor:pointer;">
+  Open in Perfetto
+</button>
 <script>
-(async () => {
+let traceBuffer = null;
+
+async function loadTrace() {
   const status = document.getElementById('status');
+  const btn = document.getElementById('open');
   try {
     const resp = await fetch('/trace');
     const blob = await resp.blob();
-    const buf = await blob.arrayBuffer();
-    status.textContent = 'Opening Perfetto...';
-
-    const win = window.open('https://ui.perfetto.dev');
-    if (!win) { status.textContent = 'Popup blocked. Allow popups and reload.'; return; }
-
-    const timer = setInterval(() => {
-      win.postMessage('PING', 'https://ui.perfetto.dev');
-    }, 200);
-
-    window.addEventListener('message', (evt) => {
-      if (evt.data !== 'PONG') return;
-      clearInterval(timer);
-      win.postMessage({
-        perfetto: { buffer: buf, title: 'tracey_mctraceface', keepApiOpen: false }
-      }, 'https://ui.perfetto.dev');
-      status.textContent = 'Trace sent to Perfetto. You can close this tab.';
-    });
+    traceBuffer = await blob.arrayBuffer();
+    status.textContent = 'Trace loaded (' + (traceBuffer.byteLength / 1024).toFixed(0) + ' KB). Click to open:';
+    btn.style.display = 'inline-block';
   } catch (e) {
-    status.textContent = 'Error: ' + e.message;
+    status.textContent = 'Error loading trace: ' + e.message;
   }
-})();
+}
+
+function openPerfetto() {
+  const status = document.getElementById('status');
+  const btn = document.getElementById('open');
+  const win = window.open('https://ui.perfetto.dev');
+  if (!win) { status.textContent = 'Popup still blocked. Allow popups for 127.0.0.1.'; return; }
+
+  btn.style.display = 'none';
+  status.textContent = 'Waiting for Perfetto to load...';
+
+  const timer = setInterval(() => {
+    win.postMessage('PING', 'https://ui.perfetto.dev');
+  }, 200);
+
+  window.addEventListener('message', (evt) => {
+    if (evt.data !== 'PONG') return;
+    clearInterval(timer);
+    win.postMessage({
+      perfetto: { buffer: traceBuffer, title: 'tracey_mctraceface', keepApiOpen: false }
+    }, 'https://ui.perfetto.dev');
+    status.textContent = 'Trace sent to Perfetto. You can close this tab.';
+  });
+}
+
+document.getElementById('open').addEventListener('click', openPerfetto);
+loadTrace();
 </script>
 </body></html>)";
     }
