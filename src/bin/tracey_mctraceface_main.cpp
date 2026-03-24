@@ -7,6 +7,7 @@
 #include <tracey_mctraceface/perf_driver.hpp>
 #include <tracey_mctraceface/perf_script_parser.hpp>
 #include <tracey_mctraceface/stack_reconstructor.hpp>
+#include <tracey_mctraceface/stats_sampler.hpp>
 #include <tracey_mctraceface/subprocess.hpp>
 #include <tracey_mctraceface/trace_filter.hpp>
 #include <tracey_mctraceface/trace_server.hpp>
@@ -18,6 +19,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <thread>
 
@@ -38,7 +40,8 @@ namespace tracey_mctraceface {
       const std::string& working_dir,
       const std::string& output,
       bool sampling,
-      const TraceFilter::Config& filter_config = {}) -> int {
+      const TraceFilter::Config& filter_config = {},
+      const std::vector<StatsSampler::Sample>& stats = {}) -> int {
       PerfConfig perf_config;
       perf_config.sampling = sampling;
       auto script_args = build_perf_script_args(perf_config, working_dir);
@@ -80,6 +83,41 @@ namespace tracey_mctraceface {
         }
       }
       reconstructor.finish();
+
+      // Write process stats as counter tracks
+      if (!stats.empty()) {
+        // Use pid=0, tid=0 for process-level counters
+        // Base time is the first stats sample's timestamp
+        auto stats_base = stats.front().timestamp_ns;
+        for (const auto& s : stats) {
+          auto ts = s.timestamp_ns - stats_base;
+          writer.write_counter(
+            0,
+            0,
+            "stats",
+            "RSS (bytes)",
+            1,
+            static_cast<std::int64_t>(s.rss_bytes),
+            ts);
+          writer.write_counter(
+            0,
+            0,
+            "stats",
+            "I/O Read (bytes)",
+            2,
+            static_cast<std::int64_t>(s.io_read_bytes),
+            ts);
+          writer.write_counter(
+            0,
+            0,
+            "stats",
+            "I/O Write (bytes)",
+            3,
+            static_cast<std::int64_t>(s.io_write_bytes),
+            ts);
+        }
+        std::cerr << "Wrote " << stats.size() << " stat samples\n";
+      }
 
       if (filter.start_symbol_missing()) {
         std::cerr << "warning: start symbol '" << filter_config.start_symbol
@@ -204,17 +242,41 @@ namespace tracey_mctraceface {
       std::cerr << "Recording " << program << " ...\n";
       BackgroundProcess perf_record(record_args);
 
-      // 4. Wait for perf (and the target) to finish
+      // 4. Start stats sampler if requested
+      auto counters_str = sub.value("counters", "");
+      bool want_stats = counters_str.find("rss") != std::string::npos ||
+                        counters_str.find("io") != std::string::npos;
+      auto interval_ms = sub.value("counter-interval", 10);
+
+      std::unique_ptr<StatsSampler> sampler;
+      if (want_stats) {
+        // Perf record's child PID = perf_record.pid()'s child.
+        // We sample perf's PID; /proc reads propagate to the child.
+        sampler = std::make_unique<StatsSampler>(
+          perf_record.pid(), std::chrono::milliseconds(interval_ms));
+        sampler->start();
+        std::cerr << "Stats sampler started (interval " << interval_ms
+                  << " ms)\n";
+      }
+
+      // 5. Wait for perf (and the target) to finish
       auto perf_exit = perf_record.wait();
       std::cerr << "perf record exited with code " << perf_exit << '\n';
 
-      // 5. Decode the trace
+      std::vector<StatsSampler::Sample> stats;
+      if (sampler) {
+        sampler->stop();
+        stats = sampler->samples();
+      }
+
+      // 6. Decode the trace
       std::cerr << "Decoding trace ...\n";
       auto result = decode_perf_data(
         work_dir.string(),
         output,
         perf_config.sampling,
-        build_filter_config(sub));
+        build_filter_config(sub),
+        stats);
       maybe_serve(sub, output);
       return result;
     }

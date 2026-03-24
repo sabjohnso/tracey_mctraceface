@@ -14,6 +14,7 @@ target_link_libraries(tracey_mctraceface PRIVATE
   tracey_mctraceface::subprocess
   tracey_mctraceface::trace_filter
   tracey_mctraceface::trace_server
+  tracey_mctraceface::stats_sampler
   tracey_mctraceface::background_process
   tracey_mctraceface::perf_capabilities)
 
