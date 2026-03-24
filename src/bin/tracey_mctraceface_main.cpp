@@ -23,6 +23,14 @@ namespace tracey_mctraceface {
 
   namespace {
 
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+    volatile sig_atomic_t g_interrupted = 0;
+
+    void
+    sigint_handler(int /*sig*/) {
+      g_interrupted = 1;
+    }
+
     auto
     decode_perf_data(
       const std::string& working_dir, const std::string& output, bool sampling)
@@ -84,16 +92,43 @@ namespace tracey_mctraceface {
     }
 
     auto
+    parse_pids(const std::string& pid_str) -> std::vector<std::string> {
+      std::vector<std::string> pids;
+      std::string current;
+      for (char c : pid_str) {
+        if (c == ',') {
+          if (!current.empty()) {
+            pids.push_back(current);
+            current.clear();
+          }
+        } else {
+          current += c;
+        }
+      }
+      if (!current.empty()) pids.push_back(current);
+      return pids;
+    }
+
+    auto
+    build_config_from_sub(const nlohmann::json& sub) -> PerfConfig {
+      PerfConfig config;
+      config.multi_thread = sub.value("multi-thread", false);
+      config.full_execution = sub.value("full-execution", false);
+      config.sampling = sub.value("sampling", false);
+      config.snapshot_size_pages =
+        static_cast<std::uint32_t>(sub.value("snapshot-size", 0));
+      config.trace_scope =
+        parse_trace_scope(sub.value("trace-scope", "userspace"));
+      config.timer_resolution =
+        parse_timer_resolution(sub.value("timer-resolution", "normal"));
+      return config;
+    }
+
+    auto
     run_run(const nlohmann::json& config) -> int {
       auto sub = config.value("run", nlohmann::json::object());
       auto program = sub.value("program", "");
       auto output = sub.value("output", "trace.fxt");
-      auto multi_thread = sub.value("multi-thread", false);
-      auto full_execution = sub.value("full-execution", false);
-      auto sampling = sub.value("sampling", false);
-      auto snapshot_size = sub.value("snapshot-size", 0);
-      auto trace_scope_str = sub.value("trace-scope", "userspace");
-      auto timer_res_str = sub.value("timer-resolution", "normal");
 
       // Collect program args
       std::vector<std::string> program_args;
@@ -104,28 +139,20 @@ namespace tracey_mctraceface {
         }
       }
 
+      auto perf_config = build_config_from_sub(sub);
+
       // 1. Detect capabilities
       auto caps = detect_capabilities();
-      if (!sampling && !caps.has_intel_pt) {
+      if (!perf_config.sampling && !caps.has_intel_pt) {
         std::cerr << "warning: Intel PT not available, falling back to "
                      "sampling mode\n";
-        sampling = true;
+        perf_config.sampling = true;
       }
 
       // 2. Create working directory
       auto work_dir = std::filesystem::temp_directory_path() /
                       ("tracey_mctraceface_" + std::to_string(getpid()));
       std::filesystem::create_directories(work_dir);
-
-      // 3. Build perf config
-      PerfConfig perf_config;
-      perf_config.multi_thread = multi_thread;
-      perf_config.full_execution = full_execution;
-      perf_config.sampling = sampling;
-      perf_config.snapshot_size_pages =
-        static_cast<std::uint32_t>(snapshot_size);
-      perf_config.trace_scope = parse_trace_scope(trace_scope_str);
-      perf_config.timer_resolution = parse_timer_resolution(timer_res_str);
       perf_config.working_directory = work_dir.string();
 
       // 4. Fork the target program (stopped)
@@ -150,7 +177,7 @@ namespace tracey_mctraceface {
       std::cerr << "Program exited with code " << target_exit << '\n';
 
       // 8. Signal perf to snapshot and stop
-      if (!full_execution && !sampling) {
+      if (!perf_config.full_execution && !perf_config.sampling) {
         if (caps.snapshot_on_exit) {
           perf_record.send_signal(SIGINT);
         } else {
@@ -164,7 +191,84 @@ namespace tracey_mctraceface {
 
       // 9. Decode the trace
       std::cerr << "Decoding trace ...\n";
-      return decode_perf_data(work_dir.string(), output, sampling);
+      return decode_perf_data(work_dir.string(), output, perf_config.sampling);
+    }
+
+    auto
+    run_attach(const nlohmann::json& config) -> int {
+      auto sub = config.value("attach", nlohmann::json::object());
+      auto pid_str = sub.value("pid", "");
+      auto output = sub.value("output", "trace.fxt");
+
+      auto pids = parse_pids(pid_str);
+      if (pids.empty()) {
+        std::cerr << "error: no PIDs specified\n";
+        return 1;
+      }
+
+      auto perf_config = build_config_from_sub(sub);
+
+      // 1. Detect capabilities
+      auto caps = detect_capabilities();
+      if (!perf_config.sampling && !caps.has_intel_pt) {
+        std::cerr << "warning: Intel PT not available, falling back to "
+                     "sampling mode\n";
+        perf_config.sampling = true;
+      }
+
+      // 2. Create working directory
+      auto work_dir = std::filesystem::temp_directory_path() /
+                      ("tracey_mctraceface_" + std::to_string(getpid()));
+      std::filesystem::create_directories(work_dir);
+      perf_config.working_directory = work_dir.string();
+
+      // 3. Start perf record
+      auto record_args = build_perf_record_args(perf_config, caps, pids);
+      std::cerr << "Attaching to PID(s) " << pid_str << " ...\n";
+      BackgroundProcess perf_record(record_args);
+
+      // Brief pause for perf to attach
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+      // 4. Wait for Ctrl+C
+      std::cerr << "Recording. Press Ctrl+C to stop.\n";
+      g_interrupted = 0;
+
+      struct sigaction sa{};
+      sa.sa_handler = sigint_handler;
+      sigemptyset(&sa.sa_mask);
+      sigaction(SIGINT, &sa, nullptr);
+
+      while (g_interrupted == 0) {
+        // Check if perf exited unexpectedly
+        if (auto code = perf_record.try_wait()) {
+          std::cerr << "perf record exited unexpectedly (code " << *code
+                    << ")\n";
+          break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      }
+
+      // Restore default SIGINT handler
+      sa.sa_handler = SIG_DFL;
+      sigaction(SIGINT, &sa, nullptr);
+
+      // 5. Signal perf to snapshot and stop
+      std::cerr << "\nStopping recording ...\n";
+      if (!perf_config.full_execution && !perf_config.sampling) {
+        if (caps.snapshot_on_exit) {
+          perf_record.send_signal(SIGINT);
+        } else {
+          perf_record.send_signal(SIGUSR2);
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      }
+      perf_record.send_signal(SIGTERM);
+      perf_record.wait();
+
+      // 6. Decode
+      std::cerr << "Decoding trace ...\n";
+      return decode_perf_data(work_dir.string(), output, perf_config.sampling);
     }
 
     auto
@@ -188,15 +292,7 @@ namespace tracey_mctraceface {
 
     if (command == "run") { return run_run(config); }
 
-    if (command == "attach") {
-      auto sub = config.value("attach", nlohmann::json::object());
-      auto pid = sub.value("pid", "");
-      auto output_path = sub.value("output", "trace.fxt");
-
-      std::cerr << "attach: pid=" << pid << " -> " << output_path << '\n';
-      std::cerr << "error: attach command not yet implemented\n";
-      return 1;
-    }
+    if (command == "attach") { return run_attach(config); }
 
     if (command == "decode") { return run_decode(config); }
 
