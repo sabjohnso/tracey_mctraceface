@@ -85,3 +85,14 @@ set_target_properties(tracey_mctraceface_subprocess PROPERTIES
   CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
 
 add_library(tracey_mctraceface::subprocess ALIAS tracey_mctraceface_subprocess)
+
+add_library(tracey_mctraceface_background_process background_process.cpp)
+
+target_link_libraries(tracey_mctraceface_background_process
+  PUBLIC tracey_mctraceface::header)
+
+set_target_properties(tracey_mctraceface_background_process PROPERTIES
+  EXPORT_NAME background_process
+  CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
+
+add_library(tracey_mctraceface::background_process ALIAS tracey_mctraceface_background_process)

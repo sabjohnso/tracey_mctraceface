@@ -24,3 +24,6 @@ target_link_libraries(perf_capabilities_test PRIVATE tracey_mctraceface::perf_ca
 
 tracey_mctraceface_add_test(perf_driver)
 target_link_libraries(perf_driver_test PRIVATE tracey_mctraceface::perf_driver)
+
+tracey_mctraceface_add_test(background_process)
+target_link_libraries(background_process_test PRIVATE tracey_mctraceface::background_process)
