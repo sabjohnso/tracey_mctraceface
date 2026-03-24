@@ -128,7 +128,8 @@ namespace tracey_mctraceface {
     run_run(const nlohmann::json& config) -> int {
       auto sub = config.value("run", nlohmann::json::object());
       auto program = sub.value("program", "");
-      auto output = sub.value("output", "trace.fxt");
+      auto output =
+        std::filesystem::absolute(sub.value("output", "trace.fxt")).string();
 
       // Collect program args
       std::vector<std::string> program_args;
@@ -198,7 +199,8 @@ namespace tracey_mctraceface {
     run_attach(const nlohmann::json& config) -> int {
       auto sub = config.value("attach", nlohmann::json::object());
       auto pid_str = sub.value("pid", "");
-      auto output = sub.value("output", "trace.fxt");
+      auto output =
+        std::filesystem::absolute(sub.value("output", "trace.fxt")).string();
 
       auto pids = parse_pids(pid_str);
       if (pids.empty()) {
@@ -275,7 +277,8 @@ namespace tracey_mctraceface {
     run_decode(const nlohmann::json& config) -> int {
       auto sub = config.value("decode", nlohmann::json::object());
       auto working_dir = sub.value("working-directory", "");
-      auto output = sub.value("output", "trace.fxt");
+      auto output =
+        std::filesystem::absolute(sub.value("output", "trace.fxt")).string();
       auto sampling = sub.value("sampling", false);
 
       std::cerr << "Decoding " << working_dir << "/perf.data -> " << output
@@ -288,16 +291,21 @@ namespace tracey_mctraceface {
 
   auto
   run(const nlohmann::json& config) -> int {
-    auto command = config.value("command", "");
+    try {
+      auto command = config.value("command", "");
 
-    if (command == "run") { return run_run(config); }
+      if (command == "run") { return run_run(config); }
 
-    if (command == "attach") { return run_attach(config); }
+      if (command == "attach") { return run_attach(config); }
 
-    if (command == "decode") { return run_decode(config); }
+      if (command == "decode") { return run_decode(config); }
 
-    std::cerr << "error: no command specified\n";
-    return 1;
+      std::cerr << "error: no command specified\n";
+      return 1;
+    } catch (const std::exception& e) {
+      std::cerr << "error: " << e.what() << '\n';
+      return 1;
+    }
   }
 
 } // namespace tracey_mctraceface
