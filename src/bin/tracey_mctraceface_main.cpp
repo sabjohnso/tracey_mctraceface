@@ -208,7 +208,15 @@ namespace tracey_mctraceface {
       auto perf_exit = perf_record.wait();
       std::cerr << "perf record exited with code " << perf_exit << '\n';
 
-      // 5. Decode the trace
+      // 5. Decode or save for later
+      if (sub.value("no-decode", false)) {
+        std::cerr << "perf.data saved to: " << work_dir.string() << '\n';
+        std::cerr << "Decode later with:\n"
+                  << "  tracey_mctraceface decode -d " << work_dir.string()
+                  << " -o trace.fxt\n";
+        return 0;
+      }
+
       std::cerr << "Decoding trace ...\n";
       auto result = decode_perf_data(
         work_dir.string(),
@@ -292,7 +300,15 @@ namespace tracey_mctraceface {
       perf_record.send_signal(SIGTERM);
       perf_record.wait();
 
-      // 6. Decode
+      // 6. Decode or save for later
+      if (sub.value("no-decode", false)) {
+        std::cerr << "perf.data saved to: " << work_dir.string() << '\n';
+        std::cerr << "Decode later with:\n"
+                  << "  tracey_mctraceface decode -d " << work_dir.string()
+                  << " -o trace.fxt\n";
+        return 0;
+      }
+
       std::cerr << "Decoding trace ...\n";
       auto result = decode_perf_data(
         work_dir.string(),

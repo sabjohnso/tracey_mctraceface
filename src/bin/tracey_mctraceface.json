@@ -169,6 +169,15 @@
           ]
         },
         {
+          "kind": "flag",
+          "names": [
+            "no-decode"
+          ],
+          "doc": [
+            "Skip decoding after recording. Print the perf.data path for later decode."
+          ]
+        },
+        {
           "kind": "positional",
           "name": "program",
           "doc": [
@@ -363,6 +372,15 @@
           ],
           "doc": [
             "Collect multiple start-to-end regions for comparison."
+          ]
+        },
+        {
+          "kind": "flag",
+          "names": [
+            "no-decode"
+          ],
+          "doc": [
+            "Skip decoding after recording. Print the perf.data path for later decode."
           ]
         }
       ]
