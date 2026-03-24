@@ -76,6 +76,14 @@ namespace tracey_mctraceface {
     bool base_time_set_ = false;
     std::unordered_map<ThreadKey, ThreadInfo, ThreadKeyHash> threads_;
 
+    // Symbol interning cache: raw symbol → FXT string ID.
+    // Avoids repeated shorten_symbol + intern_string on every event.
+    std::uint16_t category_id_ = 0;
+    std::unordered_map<std::string, std::uint16_t> symbol_id_cache_;
+
+    auto
+    intern_symbol(const std::string& raw_symbol) -> std::uint16_t;
+
     auto
     get_thread(std::uint32_t pid, std::uint32_t tid) -> ThreadInfo&;
 

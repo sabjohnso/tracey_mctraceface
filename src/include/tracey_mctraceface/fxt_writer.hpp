@@ -71,6 +71,19 @@ namespace tracey_mctraceface {
       std::string_view name,
       std::uint64_t timestamp);
 
+    /**
+     * @brief Write an event using pre-interned string IDs.
+     *
+     * Bypasses intern_string — caller provides IDs directly.
+     */
+    void
+    write_event_by_id(
+      std::uint8_t event_type,
+      std::uint8_t thread_ref,
+      std::uint16_t category_id,
+      std::uint16_t name_id,
+      std::uint64_t timestamp);
+
     /** @brief Write a process name kernel object record. */
     void
     write_process_name(std::uint64_t pid, std::string_view name);

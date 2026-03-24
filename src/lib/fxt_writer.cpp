@@ -244,6 +244,25 @@ namespace tracey_mctraceface {
   }
 
   void
+  FxtWriter::write_event_by_id(
+    std::uint8_t event_type,
+    std::uint8_t thread_ref,
+    std::uint16_t category_id,
+    std::uint16_t name_id,
+    std::uint64_t timestamp) {
+    fxt::EventRecordHeader_owned header;
+    header.set_rtype(4);
+    header.set_rsize(2);
+    header.set_event_type(event_type);
+    header.set_num_args(0);
+    header.set_thread_ref(thread_ref);
+    header.set_category_ref(category_id);
+    header.set_name_ref(name_id);
+    header.set_timestamp(timestamp);
+    sink_.write(header.buffer());
+  }
+
+  void
   FxtWriter::emit_event(
     std::uint8_t event_type,
     std::uint64_t pid,
