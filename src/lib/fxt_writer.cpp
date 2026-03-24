@@ -42,8 +42,8 @@ namespace tracey_mctraceface {
     sink_.write(magic.buffer());
 
     // 2. Provider info metadata (variable-length)
-    auto name_len = static_cast<std::uint16_t>(
-      std::min(provider_name.size(), std::size_t{4095}));
+    auto name_len = static_cast<std::uint8_t>(
+      std::min(provider_name.size(), std::size_t{255}));
     auto padded_words = words_for_bytes(name_len);
     auto rsize = static_cast<std::uint16_t>(1 + padded_words);
 

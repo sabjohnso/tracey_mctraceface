@@ -15,13 +15,14 @@
     <wire-field name="magic" bits="64"/>
   </message>
 
-  <!-- Provider section metadata: rtype=0, mtype=2 -->
+  <!-- Provider section metadata: rtype=0, mtype=2
+       FXT layout: rtype(4) rsize(12) mtype(4) provider_id(32) reserved(12) -->
   <message name="ProviderSectionMetadata" type="ProviderSectionMetadata">
     <wire-field name="rtype" bits="4"/>
     <wire-field name="rsize" bits="12"/>
     <wire-field name="mtype" bits="4"/>
-    <padding bits="12"/>
     <field name="provider_id" bits="32" encoding="unsigned"/>
+    <padding bits="12"/>
   </message>
 
   <!-- Initialization record (extended 4-word form): rtype=1, rsize=4 -->
@@ -48,13 +49,15 @@
        Headers for variable-length records
        ================================================================= -->
 
-  <!-- Provider info metadata header: rtype=0, mtype=1 -->
+  <!-- Provider info metadata header: rtype=0, mtype=1
+       FXT layout: rtype(4) rsize(12) mtype(4) provider_id(32) name_len(8) reserved(4) -->
   <message name="ProviderInfoHeader" type="ProviderInfoHeader">
     <wire-field name="rtype" bits="4"/>
     <field name="rsize" bits="12" encoding="unsigned"/>
     <wire-field name="mtype" bits="4"/>
-    <field name="name_len" bits="12" encoding="unsigned"/>
     <field name="provider_id" bits="32" encoding="unsigned"/>
+    <field name="name_len" bits="8" encoding="unsigned"/>
+    <padding bits="4"/>
   </message>
 
   <!-- String record header: rtype=2 -->

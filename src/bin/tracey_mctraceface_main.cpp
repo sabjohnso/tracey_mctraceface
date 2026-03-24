@@ -43,7 +43,16 @@ namespace tracey_mctraceface {
 
       FileSink sink(output);
       FxtWriter writer(sink);
-      writer.write_preamble("tracey_mctraceface", 1, 1'000'000'000ULL, 0, 0);
+
+      // Use current wall clock as base_time so Perfetto has a time reference
+      auto now = std::chrono::system_clock::now();
+      auto base_time_ns = static_cast<std::uint64_t>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+          now.time_since_epoch())
+          .count());
+
+      writer.write_preamble(
+        "tracey_mctraceface", 0, 1'000'000'000ULL, 0, base_time_ns);
 
       StackReconstructor reconstructor(writer);
       PerfScriptParser parser;

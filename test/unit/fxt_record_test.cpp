@@ -50,13 +50,13 @@ TEST_CASE("ProviderSectionMetadata wire layout", "[fxt_record]") {
   CHECK(view.provider_id() == 0x12345678);
 
   // Verify bit-level layout of the header word:
-  // bits [0:4)   = rtype (wire-field, should be 0 from default init)
+  // bits [0:4)   = rtype (wire-field)
   // bits [4:16)  = rsize (wire-field)
   // bits [16:20) = mtype (wire-field)
-  // bits [20:32) = padding
-  // bits [32:64) = provider_id
+  // bits [20:52) = provider_id (32 bits)
+  // bits [52:64) = padding (12 bits)
   std::uint64_t word = read_word(record.buffer(), 0);
-  CHECK((word >> 32) == 0x12345678);
+  CHECK(((word >> 20) & 0xFFFFFFFF) == 0x12345678);
 }
 
 // ===========================================================================

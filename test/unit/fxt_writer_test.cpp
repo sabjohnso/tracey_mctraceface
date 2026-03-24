@@ -55,13 +55,15 @@ TEST_CASE(
   // Word 0: magic
   CHECK(read_word(sink.data(), 0) == 0x0016547846040010ULL);
 
-  // Word 1: ProviderInfo header — rtype=0, mtype=1, name_len=4
+  // Word 1: ProviderInfo header
+  // FXT layout: rtype(4) rsize(12) mtype(4) provider_id(32) name_len(8)
+  // reserved(4)
   std::uint64_t info_word = read_word(sink.data(), 1);
-  CHECK((info_word & 0xF) == 0);           // rtype=0
-  CHECK(((info_word >> 4) & 0xFFF) == 2);  // rsize=2 (1 header + 1 padded)
-  CHECK(((info_word >> 16) & 0xF) == 1);   // mtype=1
-  CHECK(((info_word >> 20) & 0xFFF) == 4); // name_len=4
-  CHECK(((info_word >> 32)) == 42);        // provider_id
+  CHECK((info_word & 0xF) == 0);                 // rtype=0
+  CHECK(((info_word >> 4) & 0xFFF) == 2);        // rsize=2
+  CHECK(((info_word >> 16) & 0xF) == 1);         // mtype=1
+  CHECK(((info_word >> 20) & 0xFFFFFFFF) == 42); // provider_id
+  CHECK(((info_word >> 52) & 0xFF) == 4);        // name_len=4
 
   // Word 2: "test" + padding
   std::array<char, 8> name_buf{};
@@ -69,10 +71,11 @@ TEST_CASE(
   CHECK(std::string_view(name_buf.data(), 4) == "test");
 
   // Word 3: ProviderSection — rtype=0, mtype=2, provider_id=42
+  // FXT layout: rtype(4) rsize(12) mtype(4) provider_id(32) reserved(12)
   std::uint64_t section_word = read_word(sink.data(), 3);
-  CHECK((section_word & 0xF) == 0);         // rtype=0
-  CHECK(((section_word >> 16) & 0xF) == 2); // mtype=2
-  CHECK(((section_word >> 32)) == 42);      // provider_id
+  CHECK((section_word & 0xF) == 0);                 // rtype=0
+  CHECK(((section_word >> 16) & 0xF) == 2);         // mtype=2
+  CHECK(((section_word >> 20) & 0xFFFFFFFF) == 42); // provider_id
 
   // Words 4-7: InitRecord (4 words)
   std::uint64_t init_header = read_word(sink.data(), 4);
