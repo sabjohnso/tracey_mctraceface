@@ -8,6 +8,7 @@
 #include <tracey_mctraceface/perf_script_parser.hpp>
 #include <tracey_mctraceface/stack_reconstructor.hpp>
 #include <tracey_mctraceface/subprocess.hpp>
+#include <tracey_mctraceface/trace_filter.hpp>
 
 #include <signal.h>
 #include <unistd.h>
@@ -33,8 +34,10 @@ namespace tracey_mctraceface {
 
     auto
     decode_perf_data(
-      const std::string& working_dir, const std::string& output, bool sampling)
-      -> int {
+      const std::string& working_dir,
+      const std::string& output,
+      bool sampling,
+      const TraceFilter::Config& filter_config = {}) -> int {
       PerfConfig perf_config;
       perf_config.sampling = sampling;
       auto script_args = build_perf_script_args(perf_config, working_dir);
@@ -56,23 +59,34 @@ namespace tracey_mctraceface {
 
       StackReconstructor reconstructor(writer);
       PerfScriptParser parser;
+      TraceFilter filter(filter_config);
 
       std::string line;
       std::uint64_t event_count = 0;
 
       while (perf_script.read_line(line)) {
         auto event = parser.feed_line(line);
-        if (event) {
+        if (event && filter.should_pass(*event)) {
           reconstructor.process_event(*event);
           ++event_count;
         }
       }
 
       if (auto event = parser.finish()) {
-        reconstructor.process_event(*event);
-        ++event_count;
+        if (filter.should_pass(*event)) {
+          reconstructor.process_event(*event);
+          ++event_count;
+        }
       }
       reconstructor.finish();
+
+      if (filter.start_symbol_missing()) {
+        std::cerr << "warning: start symbol '" << filter_config.start_symbol
+                  << "' was not found in the trace\n";
+      }
+      if (filter.slice_count() > 0) {
+        std::cerr << "Recorded " << filter.slice_count() << " slice(s)\n";
+      }
 
       auto exit_code = perf_script.wait();
 
@@ -98,6 +112,15 @@ namespace tracey_mctraceface {
       if (s == "low") return TimerResolution::Low;
       if (s == "high") return TimerResolution::High;
       return TimerResolution::Normal;
+    }
+
+    auto
+    build_filter_config(const nlohmann::json& sub) -> TraceFilter::Config {
+      return {
+        .start_symbol = sub.value("start-symbol", ""),
+        .end_symbol = sub.value("end-symbol", ""),
+        .multi_slice = sub.value("multi-slice", false),
+      };
     }
 
     auto
@@ -178,7 +201,11 @@ namespace tracey_mctraceface {
 
       // 5. Decode the trace
       std::cerr << "Decoding trace ...\n";
-      return decode_perf_data(work_dir.string(), output, perf_config.sampling);
+      return decode_perf_data(
+        work_dir.string(),
+        output,
+        perf_config.sampling,
+        build_filter_config(sub));
     }
 
     auto
@@ -256,7 +283,11 @@ namespace tracey_mctraceface {
 
       // 6. Decode
       std::cerr << "Decoding trace ...\n";
-      return decode_perf_data(work_dir.string(), output, perf_config.sampling);
+      return decode_perf_data(
+        work_dir.string(),
+        output,
+        perf_config.sampling,
+        build_filter_config(sub));
     }
 
     auto
@@ -270,7 +301,8 @@ namespace tracey_mctraceface {
       std::cerr << "Decoding " << working_dir << "/perf.data -> " << output
                 << '\n';
 
-      return decode_perf_data(working_dir, output, sampling);
+      return decode_perf_data(
+        working_dir, output, sampling, build_filter_config(sub));
     }
 
   } // namespace

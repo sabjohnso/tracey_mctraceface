@@ -28,6 +28,9 @@ target_link_libraries(perf_driver_test PRIVATE tracey_mctraceface::perf_driver)
 tracey_mctraceface_add_test(background_process)
 target_link_libraries(background_process_test PRIVATE tracey_mctraceface::background_process)
 
+tracey_mctraceface_add_test(trace_filter)
+target_link_libraries(trace_filter_test PRIVATE tracey_mctraceface::trace_filter)
+
 tracey_mctraceface_add_test(trace_validation)
 target_link_libraries(trace_validation_test PRIVATE
   tracey_mctraceface::stack_reconstructor

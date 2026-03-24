@@ -12,6 +12,7 @@ target_link_libraries(tracey_mctraceface PRIVATE
   tracey_mctraceface::perf_capabilities
   tracey_mctraceface::file_sink
   tracey_mctraceface::subprocess
+  tracey_mctraceface::trace_filter
   tracey_mctraceface::background_process
   tracey_mctraceface::perf_capabilities)
 
