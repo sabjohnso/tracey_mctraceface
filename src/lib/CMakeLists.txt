@@ -74,3 +74,14 @@ set_target_properties(tracey_mctraceface_file_sink PROPERTIES
   CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
 
 add_library(tracey_mctraceface::file_sink ALIAS tracey_mctraceface_file_sink)
+
+add_library(tracey_mctraceface_subprocess subprocess.cpp)
+
+target_link_libraries(tracey_mctraceface_subprocess
+  PUBLIC tracey_mctraceface::header)
+
+set_target_properties(tracey_mctraceface_subprocess PROPERTIES
+  EXPORT_NAME subprocess
+  CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
+
+add_library(tracey_mctraceface::subprocess ALIAS tracey_mctraceface_subprocess)
