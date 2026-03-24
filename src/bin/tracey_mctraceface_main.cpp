@@ -232,10 +232,6 @@ namespace tracey_mctraceface {
 
       auto perf_config = build_config_from_sub(sub);
 
-      // In run mode, always trace all threads — the target may spawn
-      // workers and we want to see them all.
-      perf_config.multi_thread = true;
-
       // 1. Detect capabilities
       auto caps = detect_capabilities();
       if (!perf_config.sampling && !caps.has_intel_pt) {
