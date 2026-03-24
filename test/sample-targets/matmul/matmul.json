@@ -1,0 +1,50 @@
+{
+  "name": "matmul",
+  "doc": [
+    "Matrix-matrix multiplication benchmark.",
+    "Multiplies random LxM and MxN matrices using threads."
+  ],
+  "version": "0.1.0",
+  "args": [
+    {
+      "kind": "option",
+      "names": ["l"],
+      "doc": ["Number of rows in the first matrix."],
+      "type": "int",
+      "default": 128,
+      "docv": "ROWS"
+    },
+    {
+      "kind": "option",
+      "names": ["m"],
+      "doc": ["Shared dimension (columns of A, rows of B)."],
+      "type": "int",
+      "default": 128,
+      "docv": "DIM"
+    },
+    {
+      "kind": "option",
+      "names": ["n"],
+      "doc": ["Number of columns in the second matrix."],
+      "type": "int",
+      "default": 128,
+      "docv": "COLS"
+    },
+    {
+      "kind": "option",
+      "names": ["threads", "t"],
+      "doc": ["Number of worker threads."],
+      "type": "int",
+      "default": 4,
+      "docv": "NUM"
+    },
+    {
+      "kind": "option",
+      "names": ["nmul"],
+      "doc": ["Number of multiplications to perform."],
+      "type": "int",
+      "default": 1,
+      "docv": "COUNT"
+    }
+  ]
+}

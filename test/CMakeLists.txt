@@ -15,3 +15,4 @@ endmacro()
 
 add_subdirectory(unit)
 add_subdirectory(feature)
+add_subdirectory(sample-targets/matmul)
