@@ -8,89 +8,172 @@
   "commands": [
     {
       "name": "run",
-      "doc": ["Launch a program under trace and capture its execution."],
+      "doc": [
+        "Launch a program under trace and capture its execution."
+      ],
       "args": [
         {
           "kind": "flag",
-          "names": ["multi-thread"],
-          "doc": ["Trace all threads, not just the main thread."]
+          "names": [
+            "multi-thread"
+          ],
+          "doc": [
+            "Trace all threads, not just the main thread."
+          ]
         },
         {
           "kind": "flag",
-          "names": ["full-execution"],
-          "doc": ["Record entire execution, not a snapshot ring buffer."]
+          "names": [
+            "full-execution"
+          ],
+          "doc": [
+            "Record entire execution, not a snapshot ring buffer."
+          ]
         },
         {
           "kind": "flag",
-          "names": ["sampling"],
-          "doc": ["Use stacktrace sampling instead of Intel PT."]
+          "names": [
+            "sampling"
+          ],
+          "doc": [
+            "Use stacktrace sampling instead of Intel PT."
+          ]
         },
         {
           "kind": "option",
-          "names": ["output", "o"],
-          "doc": ["Output trace file path."],
+          "names": [
+            "output",
+            "o"
+          ],
+          "doc": [
+            "Output trace file path."
+          ],
           "type": "string",
           "default": "trace.fxt",
           "docv": "FILE"
         },
         {
+          "kind": "flag",
+          "names": [
+            "serve"
+          ],
+          "doc": [
+            "Open the trace in Perfetto UI via a local HTTP server."
+          ]
+        },
+        {
           "kind": "option",
-          "names": ["trigger", "t"],
-          "doc": ["Symbol to trigger snapshot on."],
+          "names": [
+            "serve-port"
+          ],
+          "doc": [
+            "Port for the local trace server."
+          ],
+          "type": "int",
+          "default": 8080,
+          "docv": "PORT"
+        },
+        {
+          "kind": "option",
+          "names": [
+            "trigger",
+            "t"
+          ],
+          "doc": [
+            "Symbol to trigger snapshot on."
+          ],
           "type": "string",
           "docv": "SYMBOL"
         },
         {
           "kind": "flag",
-          "names": ["multi-snapshot"],
-          "doc": ["Take repeated snapshots on each trigger hit."]
+          "names": [
+            "multi-snapshot"
+          ],
+          "doc": [
+            "Take repeated snapshots on each trigger hit."
+          ]
         },
         {
           "kind": "option",
-          "names": ["snapshot-size"],
-          "doc": ["Ring buffer size in pages (power of 2)."],
+          "names": [
+            "snapshot-size"
+          ],
+          "doc": [
+            "Ring buffer size in pages (power of 2)."
+          ],
           "type": "int",
           "docv": "PAGES"
         },
         {
           "kind": "option",
-          "names": ["trace-scope"],
-          "doc": ["What to trace: userspace, kernel, or both."],
+          "names": [
+            "trace-scope"
+          ],
+          "doc": [
+            "What to trace: userspace, kernel, or both."
+          ],
           "type": "enum",
-          "choices": ["userspace", "kernel", "both"],
+          "choices": [
+            "userspace",
+            "kernel",
+            "both"
+          ],
           "default": "userspace"
         },
         {
           "kind": "option",
-          "names": ["timer-resolution"],
-          "doc": ["Timer resolution: low, normal, or high."],
+          "names": [
+            "timer-resolution"
+          ],
+          "doc": [
+            "Timer resolution: low, normal, or high."
+          ],
           "type": "enum",
-          "choices": ["low", "normal", "high"],
+          "choices": [
+            "low",
+            "normal",
+            "high"
+          ],
           "default": "normal"
         },
         {
           "kind": "option",
-          "names": ["start-symbol"],
-          "doc": ["Begin recording when this symbol appears in the trace."],
+          "names": [
+            "start-symbol"
+          ],
+          "doc": [
+            "Begin recording when this symbol appears in the trace."
+          ],
           "type": "string",
           "docv": "SYMBOL"
         },
         {
           "kind": "option",
-          "names": ["end-symbol"],
-          "doc": ["Stop recording when this symbol appears in the trace."],
+          "names": [
+            "end-symbol"
+          ],
+          "doc": [
+            "Stop recording when this symbol appears in the trace."
+          ],
           "type": "string",
           "docv": "SYMBOL"
         },
         {
           "kind": "flag",
-          "names": ["multi-slice"],
-          "doc": ["Collect multiple start-to-end regions for comparison."]
+          "names": [
+            "multi-slice"
+          ],
+          "doc": [
+            "Collect multiple start-to-end regions for comparison."
+          ]
         },
         {
           "kind": "positional",
           "name": "program",
-          "doc": ["Program to run."],
+          "doc": [
+            "Program to run."
+          ],
           "type": "string",
           "required": true,
           "docv": "PROGRAM"
@@ -98,7 +181,9 @@
         {
           "kind": "positional",
           "name": "args",
-          "doc": ["Arguments to pass to the program."],
+          "doc": [
+            "Arguments to pass to the program."
+          ],
           "type": "string",
           "repeated": true,
           "docv": "ARGS"
@@ -107,145 +192,285 @@
     },
     {
       "name": "attach",
-      "doc": ["Attach to a running process and trace it."],
+      "doc": [
+        "Attach to a running process and trace it."
+      ],
       "args": [
         {
           "kind": "option",
-          "names": ["pid", "p"],
-          "doc": ["Process ID(s) to attach to (comma-separated)."],
+          "names": [
+            "pid",
+            "p"
+          ],
+          "doc": [
+            "Process ID(s) to attach to (comma-separated)."
+          ],
           "type": "string",
           "required": true,
           "docv": "PID"
         },
         {
           "kind": "flag",
-          "names": ["multi-thread"],
-          "doc": ["Trace all threads, not just the main thread."]
+          "names": [
+            "multi-thread"
+          ],
+          "doc": [
+            "Trace all threads, not just the main thread."
+          ]
         },
         {
           "kind": "flag",
-          "names": ["full-execution"],
-          "doc": ["Record entire execution, not a snapshot ring buffer."]
+          "names": [
+            "full-execution"
+          ],
+          "doc": [
+            "Record entire execution, not a snapshot ring buffer."
+          ]
         },
         {
           "kind": "flag",
-          "names": ["sampling"],
-          "doc": ["Use stacktrace sampling instead of Intel PT."]
+          "names": [
+            "sampling"
+          ],
+          "doc": [
+            "Use stacktrace sampling instead of Intel PT."
+          ]
         },
         {
           "kind": "option",
-          "names": ["output", "o"],
-          "doc": ["Output trace file path."],
+          "names": [
+            "output",
+            "o"
+          ],
+          "doc": [
+            "Output trace file path."
+          ],
           "type": "string",
           "default": "trace.fxt",
           "docv": "FILE"
         },
         {
+          "kind": "flag",
+          "names": [
+            "serve"
+          ],
+          "doc": [
+            "Open the trace in Perfetto UI via a local HTTP server."
+          ]
+        },
+        {
           "kind": "option",
-          "names": ["trigger", "t"],
-          "doc": ["Symbol to trigger snapshot on."],
+          "names": [
+            "serve-port"
+          ],
+          "doc": [
+            "Port for the local trace server."
+          ],
+          "type": "int",
+          "default": 8080,
+          "docv": "PORT"
+        },
+        {
+          "kind": "option",
+          "names": [
+            "trigger",
+            "t"
+          ],
+          "doc": [
+            "Symbol to trigger snapshot on."
+          ],
           "type": "string",
           "docv": "SYMBOL"
         },
         {
           "kind": "flag",
-          "names": ["multi-snapshot"],
-          "doc": ["Take repeated snapshots on each trigger hit."]
+          "names": [
+            "multi-snapshot"
+          ],
+          "doc": [
+            "Take repeated snapshots on each trigger hit."
+          ]
         },
         {
           "kind": "option",
-          "names": ["snapshot-size"],
-          "doc": ["Ring buffer size in pages (power of 2)."],
+          "names": [
+            "snapshot-size"
+          ],
+          "doc": [
+            "Ring buffer size in pages (power of 2)."
+          ],
           "type": "int",
           "docv": "PAGES"
         },
         {
           "kind": "option",
-          "names": ["trace-scope"],
-          "doc": ["What to trace: userspace, kernel, or both."],
+          "names": [
+            "trace-scope"
+          ],
+          "doc": [
+            "What to trace: userspace, kernel, or both."
+          ],
           "type": "enum",
-          "choices": ["userspace", "kernel", "both"],
+          "choices": [
+            "userspace",
+            "kernel",
+            "both"
+          ],
           "default": "userspace"
         },
         {
           "kind": "option",
-          "names": ["timer-resolution"],
-          "doc": ["Timer resolution: low, normal, or high."],
+          "names": [
+            "timer-resolution"
+          ],
+          "doc": [
+            "Timer resolution: low, normal, or high."
+          ],
           "type": "enum",
-          "choices": ["low", "normal", "high"],
+          "choices": [
+            "low",
+            "normal",
+            "high"
+          ],
           "default": "normal"
         },
         {
           "kind": "option",
-          "names": ["start-symbol"],
-          "doc": ["Begin recording when this symbol appears in the trace."],
+          "names": [
+            "start-symbol"
+          ],
+          "doc": [
+            "Begin recording when this symbol appears in the trace."
+          ],
           "type": "string",
           "docv": "SYMBOL"
         },
         {
           "kind": "option",
-          "names": ["end-symbol"],
-          "doc": ["Stop recording when this symbol appears in the trace."],
+          "names": [
+            "end-symbol"
+          ],
+          "doc": [
+            "Stop recording when this symbol appears in the trace."
+          ],
           "type": "string",
           "docv": "SYMBOL"
         },
         {
           "kind": "flag",
-          "names": ["multi-slice"],
-          "doc": ["Collect multiple start-to-end regions for comparison."]
+          "names": [
+            "multi-slice"
+          ],
+          "doc": [
+            "Collect multiple start-to-end regions for comparison."
+          ]
         }
       ]
     },
     {
       "name": "decode",
-      "doc": ["Decode an existing perf.data file into a trace."],
+      "doc": [
+        "Decode an existing perf.data file into a trace."
+      ],
       "args": [
         {
           "kind": "option",
-          "names": ["working-directory", "d"],
-          "doc": ["Directory containing perf.data."],
+          "names": [
+            "working-directory",
+            "d"
+          ],
+          "doc": [
+            "Directory containing perf.data."
+          ],
           "type": "dir",
           "required": true,
           "docv": "DIR"
         },
         {
           "kind": "option",
-          "names": ["executable", "e"],
-          "doc": ["ELF binary for symbol resolution."],
+          "names": [
+            "executable",
+            "e"
+          ],
+          "doc": [
+            "ELF binary for symbol resolution."
+          ],
           "type": "file",
           "docv": "FILE"
         },
         {
           "kind": "option",
-          "names": ["output", "o"],
-          "doc": ["Output trace file path."],
+          "names": [
+            "output",
+            "o"
+          ],
+          "doc": [
+            "Output trace file path."
+          ],
           "type": "string",
           "default": "trace.fxt",
           "docv": "FILE"
         },
         {
           "kind": "flag",
-          "names": ["sampling"],
-          "doc": ["Decode as sampling data instead of Intel PT."]
+          "names": [
+            "serve"
+          ],
+          "doc": [
+            "Open the trace in Perfetto UI via a local HTTP server."
+          ]
         },
         {
           "kind": "option",
-          "names": ["start-symbol"],
-          "doc": ["Begin recording when this symbol appears in the trace."],
+          "names": [
+            "serve-port"
+          ],
+          "doc": [
+            "Port for the local trace server."
+          ],
+          "type": "int",
+          "default": 8080,
+          "docv": "PORT"
+        },
+        {
+          "kind": "flag",
+          "names": [
+            "sampling"
+          ],
+          "doc": [
+            "Decode as sampling data instead of Intel PT."
+          ]
+        },
+        {
+          "kind": "option",
+          "names": [
+            "start-symbol"
+          ],
+          "doc": [
+            "Begin recording when this symbol appears in the trace."
+          ],
           "type": "string",
           "docv": "SYMBOL"
         },
         {
           "kind": "option",
-          "names": ["end-symbol"],
-          "doc": ["Stop recording when this symbol appears in the trace."],
+          "names": [
+            "end-symbol"
+          ],
+          "doc": [
+            "Stop recording when this symbol appears in the trace."
+          ],
           "type": "string",
           "docv": "SYMBOL"
         },
         {
           "kind": "flag",
-          "names": ["multi-slice"],
-          "doc": ["Collect multiple start-to-end regions for comparison."]
+          "names": [
+            "multi-slice"
+          ],
+          "doc": [
+            "Collect multiple start-to-end regions for comparison."
+          ]
         }
       ]
     }

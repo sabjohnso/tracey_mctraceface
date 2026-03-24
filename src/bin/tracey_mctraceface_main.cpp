@@ -9,6 +9,7 @@
 #include <tracey_mctraceface/stack_reconstructor.hpp>
 #include <tracey_mctraceface/subprocess.hpp>
 #include <tracey_mctraceface/trace_filter.hpp>
+#include <tracey_mctraceface/trace_server.hpp>
 
 #include <signal.h>
 #include <unistd.h>
@@ -114,6 +115,14 @@ namespace tracey_mctraceface {
       return TimerResolution::Normal;
     }
 
+    void
+    maybe_serve(const nlohmann::json& sub, const std::string& output) {
+      if (sub.value("serve", false)) {
+        auto port = static_cast<std::uint16_t>(sub.value("serve-port", 8080));
+        serve_trace(output, port);
+      }
+    }
+
     auto
     build_filter_config(const nlohmann::json& sub) -> TraceFilter::Config {
       return {
@@ -201,11 +210,13 @@ namespace tracey_mctraceface {
 
       // 5. Decode the trace
       std::cerr << "Decoding trace ...\n";
-      return decode_perf_data(
+      auto result = decode_perf_data(
         work_dir.string(),
         output,
         perf_config.sampling,
         build_filter_config(sub));
+      maybe_serve(sub, output);
+      return result;
     }
 
     auto
@@ -283,11 +294,13 @@ namespace tracey_mctraceface {
 
       // 6. Decode
       std::cerr << "Decoding trace ...\n";
-      return decode_perf_data(
+      auto result = decode_perf_data(
         work_dir.string(),
         output,
         perf_config.sampling,
         build_filter_config(sub));
+      maybe_serve(sub, output);
+      return result;
     }
 
     auto
@@ -301,8 +314,10 @@ namespace tracey_mctraceface {
       std::cerr << "Decoding " << working_dir << "/perf.data -> " << output
                 << '\n';
 
-      return decode_perf_data(
+      auto result = decode_perf_data(
         working_dir, output, sampling, build_filter_config(sub));
+      maybe_serve(sub, output);
+      return result;
     }
 
   } // namespace

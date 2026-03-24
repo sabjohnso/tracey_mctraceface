@@ -126,3 +126,14 @@ set_target_properties(tracey_mctraceface_compressed_sink PROPERTIES
   CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
 
 add_library(tracey_mctraceface::compressed_sink ALIAS tracey_mctraceface_compressed_sink)
+
+add_library(tracey_mctraceface_trace_server trace_server.cpp)
+
+target_link_libraries(tracey_mctraceface_trace_server
+  PUBLIC tracey_mctraceface::header)
+
+set_target_properties(tracey_mctraceface_trace_server PROPERTIES
+  EXPORT_NAME trace_server
+  CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
+
+add_library(tracey_mctraceface::trace_server ALIAS tracey_mctraceface_trace_server)
