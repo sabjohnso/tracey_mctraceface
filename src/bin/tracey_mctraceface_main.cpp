@@ -191,14 +191,22 @@ namespace tracey_mctraceface {
       }
 
       // 2. Create working directory
-      auto work_dir = std::filesystem::temp_directory_path() /
-                      ("tracey_mctraceface_" + std::to_string(getpid()));
+      //    --no-decode: use CWD so the data is easy to find
+      //    otherwise: use /tmp since it's ephemeral
+      auto no_decode = sub.value("no-decode", false);
+      std::filesystem::path work_dir;
+      if (no_decode) {
+        auto prog_name = std::filesystem::path(program).filename().string();
+        work_dir =
+          std::filesystem::current_path() / ("tracey_mctraceface_" + prog_name);
+      } else {
+        work_dir = std::filesystem::temp_directory_path() /
+                   ("tracey_mctraceface_" + std::to_string(getpid()));
+      }
       std::filesystem::create_directories(work_dir);
       perf_config.working_directory = work_dir.string();
 
       // 3. Let perf record launch the target program directly.
-      //    This avoids tracing our own setup code — perf manages
-      //    the child process and starts tracing after exec.
       auto record_args =
         build_perf_record_args(perf_config, caps, program, program_args);
       std::cerr << "Recording " << program << " ...\n";
@@ -209,7 +217,7 @@ namespace tracey_mctraceface {
       std::cerr << "perf record exited with code " << perf_exit << '\n';
 
       // 5. Decode or save for later
-      if (sub.value("no-decode", false)) {
+      if (no_decode) {
         std::cerr << "perf.data saved to: " << work_dir.string() << '\n';
         std::cerr << "Decode later with:\n"
                   << "  tracey_mctraceface decode -d " << work_dir.string()
@@ -251,8 +259,15 @@ namespace tracey_mctraceface {
       }
 
       // 2. Create working directory
-      auto work_dir = std::filesystem::temp_directory_path() /
-                      ("tracey_mctraceface_" + std::to_string(getpid()));
+      auto no_decode = sub.value("no-decode", false);
+      std::filesystem::path work_dir;
+      if (no_decode) {
+        work_dir = std::filesystem::current_path() /
+                   ("tracey_mctraceface_pid" + pids[0]);
+      } else {
+        work_dir = std::filesystem::temp_directory_path() /
+                   ("tracey_mctraceface_" + std::to_string(getpid()));
+      }
       std::filesystem::create_directories(work_dir);
       perf_config.working_directory = work_dir.string();
 
