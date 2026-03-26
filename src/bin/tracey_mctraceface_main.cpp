@@ -169,8 +169,11 @@ namespace tracey_mctraceface {
     run_run(const nlohmann::json& config) -> int {
       auto sub = config.value("run", nlohmann::json::object());
       auto program = sub.value("program", "");
-      auto output =
-        std::filesystem::absolute(sub.value("output", "trace.fxt")).string();
+      auto output_val = sub.value("output", "trace.fxt");
+      if (sub.value("no-decode", false) && output_val == "trace.fxt") {
+        output_val = "perf.data";
+      }
+      auto output = std::filesystem::absolute(output_val).string();
 
       // Collect program args (without the program name itself)
       std::vector<std::string> program_args;
@@ -190,18 +193,19 @@ namespace tracey_mctraceface {
         perf_config.sampling = true;
       }
 
-      // 2. Create working directory
-      //    --no-decode: use CWD so the data is easy to find
-      //    otherwise: use /tmp since it's ephemeral
+      // 2. Create working directory and configure perf output
       auto no_decode = sub.value("no-decode", false);
       std::filesystem::path work_dir;
+      std::filesystem::path perf_data_path;
+
       if (no_decode) {
-        auto prog_name = std::filesystem::path(program).filename().string();
-        work_dir =
-          std::filesystem::current_path() / ("tracey_mctraceface_" + prog_name);
+        // --no-decode: write perf.data to -o path (or "perf.data")
+        perf_data_path = std::filesystem::absolute(output);
+        work_dir = perf_data_path.parent_path();
       } else {
         work_dir = std::filesystem::temp_directory_path() /
                    ("tracey_mctraceface_" + std::to_string(getpid()));
+        perf_data_path = work_dir / "perf.data";
       }
       std::filesystem::create_directories(work_dir);
       perf_config.working_directory = work_dir.string();
@@ -209,6 +213,17 @@ namespace tracey_mctraceface {
       // 3. Let perf record launch the target program directly.
       auto record_args =
         build_perf_record_args(perf_config, caps, program, program_args);
+
+      // Override the perf.data output path for --no-decode
+      if (no_decode) {
+        for (std::size_t i = 0; i < record_args.size(); ++i) {
+          if (record_args[i] == "-o" && i + 1 < record_args.size()) {
+            record_args[i + 1] = perf_data_path.string();
+            break;
+          }
+        }
+      }
+
       std::cerr << "Recording " << program << " ...\n";
       BackgroundProcess perf_record(record_args);
 
@@ -218,10 +233,7 @@ namespace tracey_mctraceface {
 
       // 5. Decode or save for later
       if (no_decode) {
-        std::cerr << "perf.data saved to: " << work_dir.string() << '\n';
-        std::cerr << "Decode later with:\n"
-                  << "  tracey_mctraceface decode -d " << work_dir.string()
-                  << " -o trace.fxt\n";
+        std::cerr << "Saved to: " << perf_data_path.string() << '\n';
         return 0;
       }
 
@@ -239,8 +251,11 @@ namespace tracey_mctraceface {
     run_attach(const nlohmann::json& config) -> int {
       auto sub = config.value("attach", nlohmann::json::object());
       auto pid_str = sub.value("pid", "");
-      auto output =
-        std::filesystem::absolute(sub.value("output", "trace.fxt")).string();
+      auto output_val = sub.value("output", "trace.fxt");
+      if (sub.value("no-decode", false) && output_val == "trace.fxt") {
+        output_val = "perf.data";
+      }
+      auto output = std::filesystem::absolute(output_val).string();
 
       auto pids = parse_pids(pid_str);
       if (pids.empty()) {
@@ -258,21 +273,33 @@ namespace tracey_mctraceface {
         perf_config.sampling = true;
       }
 
-      // 2. Create working directory
+      // 2. Create working directory and configure perf output
       auto no_decode = sub.value("no-decode", false);
       std::filesystem::path work_dir;
+      std::filesystem::path perf_data_path;
+
       if (no_decode) {
-        work_dir = std::filesystem::current_path() /
-                   ("tracey_mctraceface_pid" + pids[0]);
+        perf_data_path = std::filesystem::absolute(output);
+        work_dir = perf_data_path.parent_path();
       } else {
         work_dir = std::filesystem::temp_directory_path() /
                    ("tracey_mctraceface_" + std::to_string(getpid()));
+        perf_data_path = work_dir / "perf.data";
       }
       std::filesystem::create_directories(work_dir);
       perf_config.working_directory = work_dir.string();
 
       // 3. Start perf record
       auto record_args = build_perf_record_args(perf_config, caps, pids);
+
+      if (no_decode) {
+        for (std::size_t i = 0; i < record_args.size(); ++i) {
+          if (record_args[i] == "-o" && i + 1 < record_args.size()) {
+            record_args[i + 1] = perf_data_path.string();
+            break;
+          }
+        }
+      }
       std::cerr << "Attaching to PID(s) " << pid_str << " ...\n";
       BackgroundProcess perf_record(record_args);
 
@@ -316,11 +343,8 @@ namespace tracey_mctraceface {
       perf_record.wait();
 
       // 6. Decode or save for later
-      if (sub.value("no-decode", false)) {
-        std::cerr << "perf.data saved to: " << work_dir.string() << '\n';
-        std::cerr << "Decode later with:\n"
-                  << "  tracey_mctraceface decode -d " << work_dir.string()
-                  << " -o trace.fxt\n";
+      if (no_decode) {
+        std::cerr << "Saved to: " << perf_data_path.string() << '\n';
         return 0;
       }
 

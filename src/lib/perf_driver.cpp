@@ -1,5 +1,6 @@
 #include <tracey_mctraceface/perf_driver.hpp>
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -136,7 +137,12 @@ namespace tracey_mctraceface {
     std::vector<std::string> args = {"perf", "script"};
 
     args.push_back("-i");
-    args.push_back(working_directory + "/perf.data");
+    // Accept either a directory (append /perf.data) or a file path
+    auto input_path = working_directory;
+    if (std::filesystem::is_directory(working_directory)) {
+      input_path += "/perf.data";
+    }
+    args.push_back(input_path);
     args.push_back("--ns");
 
     if (!config.sampling) {
