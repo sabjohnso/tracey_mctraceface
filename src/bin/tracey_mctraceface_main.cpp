@@ -38,10 +38,19 @@ namespace tracey_mctraceface {
       const std::string& working_dir,
       const std::string& output,
       bool sampling,
-      const TraceFilter::Config& filter_config = {}) -> int {
+      const TraceFilter::Config& filter_config = {},
+      bool verbose = false) -> int {
       PerfConfig perf_config;
       perf_config.sampling = sampling;
       auto script_args = build_perf_script_args(perf_config, working_dir);
+
+      if (verbose) {
+        std::cerr << "perf script command:";
+        for (const auto& a : script_args) {
+          std::cerr << " " << a;
+        }
+        std::cerr << '\n';
+      }
 
       Subprocess perf_script(script_args);
 
@@ -224,6 +233,15 @@ namespace tracey_mctraceface {
         }
       }
 
+      auto verbose = sub.value("verbose", false);
+      if (verbose) {
+        std::cerr << "perf record command:";
+        for (const auto& a : record_args) {
+          std::cerr << " " << a;
+        }
+        std::cerr << '\n';
+      }
+
       std::cerr << "Recording " << program << " ...\n";
       BackgroundProcess perf_record(record_args);
 
@@ -242,7 +260,8 @@ namespace tracey_mctraceface {
         work_dir.string(),
         output,
         perf_config.sampling,
-        build_filter_config(sub));
+        build_filter_config(sub),
+        verbose);
       maybe_serve(sub, output);
       return result;
     }
@@ -300,6 +319,16 @@ namespace tracey_mctraceface {
           }
         }
       }
+
+      auto verbose = sub.value("verbose", false);
+      if (verbose) {
+        std::cerr << "perf record command:";
+        for (const auto& a : record_args) {
+          std::cerr << " " << a;
+        }
+        std::cerr << '\n';
+      }
+
       std::cerr << "Attaching to PID(s) " << pid_str << " ...\n";
       BackgroundProcess perf_record(record_args);
 
@@ -353,7 +382,8 @@ namespace tracey_mctraceface {
         work_dir.string(),
         output,
         perf_config.sampling,
-        build_filter_config(sub));
+        build_filter_config(sub),
+        verbose);
       maybe_serve(sub, output);
       return result;
     }
@@ -365,12 +395,12 @@ namespace tracey_mctraceface {
       auto output =
         std::filesystem::absolute(sub.value("output", "trace.fxt")).string();
       auto sampling = sub.value("sampling", false);
+      auto verbose = sub.value("verbose", false);
 
-      std::cerr << "Decoding " << working_dir << "/perf.data -> " << output
-                << '\n';
+      std::cerr << "Decoding " << working_dir << " -> " << output << '\n';
 
       auto result = decode_perf_data(
-        working_dir, output, sampling, build_filter_config(sub));
+        working_dir, output, sampling, build_filter_config(sub), verbose);
       maybe_serve(sub, output);
       return result;
     }

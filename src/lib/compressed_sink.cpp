@@ -27,10 +27,11 @@ namespace tracey_mctraceface {
   void
   GzipSink::write(std::span<const std::byte> data) {
     if (gz_file_ && !data.empty()) {
-      gzwrite(
+      auto written = gzwrite(
         static_cast<gzFile>(gz_file_),
         data.data(),
         static_cast<unsigned>(data.size()));
+      if (written <= 0) { throw std::runtime_error("GzipSink: write failed"); }
     }
   }
 
@@ -76,8 +77,17 @@ namespace tracey_mctraceface {
       ZSTD_inBuffer input = {data.data(), data.size(), 0};
       while (input.pos < input.size) {
         ZSTD_outBuffer output = {out_buf.data(), out_buf.size(), 0};
-        ZSTD_compressStream2(ctx, &output, &input, ZSTD_e_continue);
-        std::fwrite(out_buf.data(), 1, output.pos, file);
+        auto rc = ZSTD_compressStream2(ctx, &output, &input, ZSTD_e_continue);
+        if (ZSTD_isError(rc)) {
+          throw std::runtime_error(
+            std::string("ZstdSink: compress failed: ") + ZSTD_getErrorName(rc));
+        }
+        if (output.pos > 0) {
+          auto written = std::fwrite(out_buf.data(), 1, output.pos, file);
+          if (written != output.pos) {
+            throw std::runtime_error("ZstdSink: write failed (disk full?)");
+          }
+        }
       }
     }
 
@@ -90,7 +100,10 @@ namespace tracey_mctraceface {
         do {
           ZSTD_outBuffer output = {out_buf.data(), out_buf.size(), 0};
           remaining = ZSTD_compressStream2(ctx, &output, &input, ZSTD_e_end);
-          std::fwrite(out_buf.data(), 1, output.pos, file);
+          if (ZSTD_isError(remaining)) break;
+          if (output.pos > 0) {
+            std::fwrite(out_buf.data(), 1, output.pos, file);
+          }
         } while (remaining > 0);
       }
       if (ctx) {

@@ -14,11 +14,28 @@ namespace tracey_mctraceface {
 
     constexpr std::uint64_t fxt_magic = 0x0016547846040010ULL;
 
+    // FXT record types (bits [0:4) of header word)
+    constexpr std::uint8_t rtype_metadata = 0;
+    constexpr std::uint8_t rtype_init = 1;
+    constexpr std::uint8_t rtype_string = 2;
+    constexpr std::uint8_t rtype_thread = 3;
+    constexpr std::uint8_t rtype_event = 4;
+    constexpr std::uint8_t rtype_kernel_object = 7;
+
+    // Metadata subtypes
+    constexpr std::uint8_t mtype_provider_info = 1;
+    constexpr std::uint8_t mtype_provider_section = 2;
+
+    // Event subtypes
+    constexpr std::uint8_t event_duration_begin = 2;
+    constexpr std::uint8_t event_duration_end = 3;
+
+    // Kernel object types
     constexpr std::uint8_t obj_type_process = 1;
     constexpr std::uint8_t obj_type_thread = 2;
 
-    constexpr std::uint8_t event_duration_begin = 2;
-    constexpr std::uint8_t event_duration_end = 3;
+    // Argument types
+    constexpr std::uint8_t arg_type_koid = 8;
 
     auto
     words_for_bytes(std::size_t bytes) -> std::uint16_t {
@@ -49,9 +66,9 @@ namespace tracey_mctraceface {
     auto rsize = static_cast<std::uint16_t>(1 + padded_words);
 
     fxt::ProviderInfoHeader_owned info_header;
-    info_header.set_rtype(0); // metadata
+    info_header.set_rtype(rtype_metadata);
     info_header.set_rsize(rsize);
-    info_header.set_mtype(1); // provider info
+    info_header.set_mtype(mtype_provider_info);
     info_header.set_name_len(name_len);
     info_header.set_provider_id(provider_id);
     sink_.write(info_header.buffer());
@@ -61,15 +78,15 @@ namespace tracey_mctraceface {
 
     // 3. Provider section metadata
     fxt::ProviderSectionMetadata_owned section;
-    section.set_rtype(0); // metadata
+    section.set_rtype(rtype_metadata);
     section.set_rsize(1);
-    section.set_mtype(2); // provider section
+    section.set_mtype(mtype_provider_section);
     section.set_provider_id(provider_id);
     sink_.write(section.buffer());
 
     // 4. Initialization record (extended 4-word form)
     fxt::InitRecord_owned init;
-    init.set_rtype(1); // initialization
+    init.set_rtype(rtype_init);
     init.set_rsize(4); // 4-word extended form
     init.set_ticks_per_second(ticks_per_second);
     init.set_base_ticks(base_ticks);
@@ -169,7 +186,7 @@ namespace tracey_mctraceface {
     auto name_id = intern_string(name);
 
     fxt::KernelObjectHeader_owned header;
-    header.set_rtype(7); // kernel object
+    header.set_rtype(rtype_kernel_object);
     header.set_rsize(2);
     header.set_obj_type(obj_type_process);
     header.set_name_ref(name_id);
@@ -186,7 +203,7 @@ namespace tracey_mctraceface {
 
     // Thread kernel object: koid=tid, 1 arg (process koid)
     fxt::KernelObjectHeader_owned header;
-    header.set_rtype(7); // kernel object
+    header.set_rtype(rtype_kernel_object);
     header.set_rsize(4); // 2 (header+koid) + 2 (koid arg)
     header.set_obj_type(obj_type_thread);
     header.set_name_ref(name_id);
@@ -196,7 +213,7 @@ namespace tracey_mctraceface {
 
     // Process koid argument
     fxt::ArgKoid_owned arg;
-    arg.set_arg_type(8); // koid
+    arg.set_arg_type(arg_type_koid);
     arg.set_arg_size(2);
     arg.set_arg_name(process_str_id);
     arg.set_value(pid);
@@ -221,7 +238,7 @@ namespace tracey_mctraceface {
     auto rsize = static_cast<std::uint16_t>(1 + padded_words);
 
     fxt::StringRecordHeader_owned header;
-    header.set_rtype(2); // string
+    header.set_rtype(rtype_string);
     header.set_rsize(rsize);
     header.set_string_id(id);
     header.set_str_len(str_len);
@@ -235,7 +252,7 @@ namespace tracey_mctraceface {
   FxtWriter::emit_thread_record(
     std::uint8_t slot, std::uint64_t pid, std::uint64_t tid) {
     fxt::ThreadRecord_owned record;
-    record.set_rtype(3); // thread
+    record.set_rtype(rtype_thread);
     record.set_rsize(3);
     record.set_thread_index(slot);
     record.set_pid(pid);
@@ -251,7 +268,7 @@ namespace tracey_mctraceface {
     std::uint16_t name_id,
     std::uint64_t timestamp) {
     fxt::EventRecordHeader_owned header;
-    header.set_rtype(4);
+    header.set_rtype(rtype_event);
     header.set_rsize(2);
     header.set_event_type(event_type);
     header.set_num_args(0);
@@ -275,7 +292,7 @@ namespace tracey_mctraceface {
     auto name_id = intern_string(name);
 
     fxt::EventRecordHeader_owned header;
-    header.set_rtype(4); // event
+    header.set_rtype(rtype_event);
     header.set_rsize(2); // header + timestamp, no args
     header.set_event_type(event_type);
     header.set_num_args(0);

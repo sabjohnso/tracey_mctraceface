@@ -30,7 +30,10 @@ namespace tracey_mctraceface {
   void
   FileSink::write(std::span<const std::byte> data) {
     if (file_ && !data.empty()) {
-      std::fwrite(data.data(), 1, data.size(), file_);
+      auto written = std::fwrite(data.data(), 1, data.size(), file_);
+      if (written != data.size()) {
+        throw std::runtime_error("FileSink: write failed (disk full?)");
+      }
     }
   }
 

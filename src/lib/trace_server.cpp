@@ -1,6 +1,7 @@
 #include <tracey_mctraceface/trace_server.hpp>
 
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <netinet/in.h>
 #include <signal.h>
 #include <sys/socket.h>
@@ -8,7 +9,6 @@
 
 #include <array>
 #include <cerrno>
-#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -205,8 +205,18 @@ loadTrace();
     std::cerr << "Opening browser...\n";
     std::cerr << "Press Ctrl+C to stop.\n";
 
-    auto cmd = "xdg-open '" + url + "' 2>/dev/null &";
-    std::system(cmd.c_str());
+    // Open browser without shell injection risk
+    auto browser_pid = fork();
+    if (browser_pid == 0) {
+      // Redirect stderr to /dev/null
+      int devnull = open("/dev/null", O_WRONLY);
+      if (devnull >= 0) {
+        dup2(devnull, STDERR_FILENO);
+        close(devnull);
+      }
+      execlp("xdg-open", "xdg-open", url.c_str(), nullptr);
+      _exit(127);
+    }
 
     struct sigaction sa{};
     sa.sa_handler = server_sigint_handler;

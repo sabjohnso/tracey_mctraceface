@@ -15,6 +15,16 @@
         {
           "kind": "flag",
           "names": [
+            "verbose",
+            "v"
+          ],
+          "doc": [
+            "Print perf command and other diagnostic information."
+          ]
+        },
+        {
+          "kind": "flag",
+          "names": [
             "multi-thread"
           ],
           "doc": [
@@ -206,6 +216,16 @@
       ],
       "args": [
         {
+          "kind": "flag",
+          "names": [
+            "verbose",
+            "v"
+          ],
+          "doc": [
+            "Print perf command and other diagnostic information."
+          ]
+        },
+        {
           "kind": "option",
           "names": [
             "pid",
@@ -391,6 +411,16 @@
         "Decode an existing perf.data file into a trace."
       ],
       "args": [
+        {
+          "kind": "flag",
+          "names": [
+            "verbose",
+            "v"
+          ],
+          "doc": [
+            "Print perf command and other diagnostic information."
+          ]
+        },
         {
           "kind": "option",
           "names": [
