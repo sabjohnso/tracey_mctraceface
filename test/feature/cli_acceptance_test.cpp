@@ -93,6 +93,15 @@ namespace {
     return dir;
   }
 
+  auto
+  perf_available() -> bool {
+    // Quick check: can perf record a trivial program?
+    auto rc = run_cmd(
+      "perf record -o /dev/null --event=cycles:u "
+      "-- /bin/true 2>/dev/null");
+    return rc == 0;
+  }
+
 } // namespace
 
 // ===========================================================================
@@ -124,6 +133,7 @@ TEST_CASE("attach --help prints usage", "[cli_acceptance]") {
 // ===========================================================================
 
 TEST_CASE("run produces valid FXT file", "[cli_acceptance]") {
+  if (!perf_available()) SKIP("perf not available (check perf_event_paranoid)");
   auto dir = temp_dir();
   auto output = (dir / "run_test.fxt").string();
 
@@ -150,6 +160,7 @@ TEST_CASE("run produces valid FXT file", "[cli_acceptance]") {
 // ===========================================================================
 
 TEST_CASE("run --no-decode saves perf.data", "[cli_acceptance]") {
+  if (!perf_available()) SKIP("perf not available");
   auto dir = temp_dir();
   auto output = (dir / "saved.data").string();
 
@@ -172,6 +183,7 @@ TEST_CASE("run --no-decode saves perf.data", "[cli_acceptance]") {
 // ===========================================================================
 
 TEST_CASE("decode converts perf.data to FXT", "[cli_acceptance]") {
+  if (!perf_available()) SKIP("perf not available");
   auto dir = temp_dir();
   auto perf_data = (dir / "perf.data").string();
   auto fxt_out = (dir / "decoded.fxt").string();
@@ -203,6 +215,7 @@ TEST_CASE("decode converts perf.data to FXT", "[cli_acceptance]") {
 // ===========================================================================
 
 TEST_CASE("run produces valid gzip output", "[cli_acceptance]") {
+  if (!perf_available()) SKIP("perf not available");
   auto dir = temp_dir();
   auto output = (dir / "test.fxt.gz").string();
 
@@ -227,6 +240,7 @@ TEST_CASE("run produces valid gzip output", "[cli_acceptance]") {
 // ===========================================================================
 
 TEST_CASE("run with bad output path fails gracefully", "[cli_acceptance]") {
+  if (!perf_available()) SKIP("perf not available");
   auto rc = run_cmd(
     tracey() + " run --full-execution -o /nonexistent/dir/trace.fxt"
                " -- /bin/true 2>/dev/null");
