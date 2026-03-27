@@ -34,6 +34,13 @@ target_link_libraries(compressed_sink_test PRIVATE tracey_mctraceface::compresse
 tracey_mctraceface_add_test(trace_filter)
 target_link_libraries(trace_filter_test PRIVATE tracey_mctraceface::trace_filter)
 
+tracey_mctraceface_add_test(error_path)
+target_link_libraries(error_path_test PRIVATE
+  tracey_mctraceface::fxt_writer
+  tracey_mctraceface::compressed_sink
+  tracey_mctraceface::subprocess
+  tracey_mctraceface::background_process)
+
 tracey_mctraceface_add_test(trace_validation)
 target_link_libraries(trace_validation_test PRIVATE
   tracey_mctraceface::stack_reconstructor
