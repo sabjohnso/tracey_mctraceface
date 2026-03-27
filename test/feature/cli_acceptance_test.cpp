@@ -19,16 +19,14 @@
 namespace {
 
   auto
-  exe_dir() -> std::filesystem::path {
-    // The test binary is in build/test/feature/
-    // The main binary is in build/src/bin/
-    auto self = std::filesystem::read_symlink("/proc/self/exe");
-    return self.parent_path() / "../../src/bin";
-  }
-
-  auto
   tracey() -> std::string {
-    return (exe_dir() / "tracey_mctraceface").string();
+#ifdef TRACEY_BINARY_PATH
+    return TRACEY_BINARY_PATH;
+#else
+    // Fallback: look relative to test binary
+    auto self = std::filesystem::read_symlink("/proc/self/exe");
+    return (self.parent_path() / "../../src/bin/tracey_mctraceface").string();
+#endif
   }
 
   auto
