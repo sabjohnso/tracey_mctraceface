@@ -1,5 +1,5 @@
 {
-  "name": "tracey_mctraceface",
+  "name": "tracey-mctraceface",
   "doc": [
     "Intel Processor Trace recorder and decoder.",
     "Captures and reconstructs call stacks from hardware traces."

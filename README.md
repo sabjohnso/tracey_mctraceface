@@ -12,13 +12,13 @@ display as flame charts in Perfetto's timeline UI.
 
 ```sh
 # Trace a program (full execution)
-tracey_mctraceface run --full-execution -o trace.fxt -- ./your_program args
+tracey-mctraceface run --full-execution -o trace.fxt -- ./your_program args
 
 # Open in Perfetto automatically
-tracey_mctraceface run --full-execution --serve -- ./your_program args
+tracey-mctraceface run --full-execution --serve -- ./your_program args
 
 # Trace only a specific region
-tracey_mctraceface run --full-execution \
+tracey-mctraceface run --full-execution \
   --start-symbol my_function --end-symbol cleanup \
   -o trace.fxt -- ./your_program
 ```
@@ -78,7 +78,7 @@ cmake --build --preset default
 
 The build produces:
 
-- `build/src/bin/tracey_mctraceface` — the main executable
+- `build/src/bin/tracey-mctraceface` — the main executable
 - `build/test/sample-targets/matmul/matmul` — sample benchmark program
 
 ## Usage
@@ -89,44 +89,44 @@ The build produces:
 
 ```sh
 # Basic: trace full execution, save as FXT
-tracey_mctraceface run --full-execution -o trace.fxt -- ./program args
+tracey-mctraceface run --full-execution -o trace.fxt -- ./program args
 
 # Compressed output (determined by file extension)
-tracey_mctraceface run --full-execution -o trace.fxt.gz -- ./program
-tracey_mctraceface run --full-execution -o trace.fxt.zst -- ./program
+tracey-mctraceface run --full-execution -o trace.fxt.gz -- ./program
+tracey-mctraceface run --full-execution -o trace.fxt.zst -- ./program
 
 # Open in Perfetto UI after recording
-tracey_mctraceface run --full-execution --serve -- ./program
+tracey-mctraceface run --full-execution --serve -- ./program
 
 # Record now, decode later (saves perf.data, skips decode)
-tracey_mctraceface run --full-execution --no-decode -- ./program
+tracey-mctraceface run --full-execution --no-decode -- ./program
 # → Saved to: ./perf.data
-tracey_mctraceface decode -d ./perf.data -o trace.fxt
+tracey-mctraceface decode -d ./perf.data -o trace.fxt
 ```
 
 #### `attach` — Trace a running process
 
 ```sh
 # Attach to a process by PID, Ctrl+C to stop
-tracey_mctraceface attach -p 12345 -o trace.fxt
+tracey-mctraceface attach -p 12345 -o trace.fxt
 
 # Attach with full execution recording
-tracey_mctraceface attach -p 12345 --full-execution -o trace.fxt
+tracey-mctraceface attach -p 12345 --full-execution -o trace.fxt
 ```
 
 #### `decode` — Convert existing perf.data to FXT
 
 ```sh
 # Decode a previously saved perf.data
-tracey_mctraceface decode -d ./perf.data -o trace.fxt
+tracey-mctraceface decode -d ./perf.data -o trace.fxt
 
 # Decode with filtering
-tracey_mctraceface decode -d ./perf.data \
+tracey-mctraceface decode -d ./perf.data \
   --start-symbol main --end-symbol cleanup \
   -o filtered.fxt
 
 # Decode and serve
-tracey_mctraceface decode -d ./perf.data --serve
+tracey-mctraceface decode -d ./perf.data --serve
 ```
 
 ### Trace Filtering
@@ -135,12 +135,12 @@ Extract only the region of interest from a trace:
 
 ```sh
 # Record only between start_mul and end_mul symbols
-tracey_mctraceface run --full-execution \
+tracey-mctraceface run --full-execution \
   --start-symbol start_mul --end-symbol end_mul \
   -o slice.fxt -- ./matmul
 
 # Collect multiple slices for comparison
-tracey_mctraceface run --full-execution \
+tracey-mctraceface run --full-execution \
   --start-symbol begin_work --end-symbol end_work \
   --multi-slice -o slices.fxt -- ./program
 ```
@@ -165,7 +165,7 @@ __attribute__((noinline)) void end_mul() {
 **Option 1: `--serve` flag** (recommended)
 
 ```sh
-tracey_mctraceface run --full-execution --serve -- ./program
+tracey-mctraceface run --full-execution --serve -- ./program
 ```
 
 Opens a local page in your browser that sends the trace to
@@ -180,7 +180,7 @@ the `.fxt` file.
 **Option 3: Serve an existing trace**
 
 ```sh
-tracey_mctraceface decode -d ./perf.data --serve --serve-port 9090
+tracey-mctraceface decode -d ./perf.data --serve --serve-port 9090
 ```
 
 ### Offline Processing
@@ -190,24 +190,24 @@ without decoding and process later on a development machine:
 
 ```sh
 # On production hardware: record only
-tracey_mctraceface run --full-execution --no-decode -o recording.data \
+tracey-mctraceface run --full-execution --no-decode -o recording.data \
   -- ./program
 
 # Copy to dev machine
 scp prod:recording.data .
 
 # On dev machine: decode
-tracey_mctraceface decode -d recording.data -o trace.fxt.gz --serve
+tracey-mctraceface decode -d recording.data -o trace.fxt.gz --serve
 ```
 
 ### Diagnostic Flags
 
 ```sh
 # Verbose: show perf command lines for debugging
-tracey_mctraceface run --verbose --full-execution -- ./program
+tracey-mctraceface run --verbose --full-execution -- ./program
 
 # Quiet: suppress status messages (for scripting)
-tracey_mctraceface run --quiet --full-execution -o trace.fxt -- ./program
+tracey-mctraceface run --quiet --full-execution -o trace.fxt -- ./program
 ```
 
 ## Output Formats

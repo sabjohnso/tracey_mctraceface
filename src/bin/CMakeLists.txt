@@ -19,4 +19,5 @@ target_link_libraries(tracey_mctraceface PRIVATE
   tracey_mctraceface::log)
 
 set_target_properties(tracey_mctraceface PROPERTIES
+  OUTPUT_NAME tracey-mctraceface
   CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})
