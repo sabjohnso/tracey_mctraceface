@@ -15,7 +15,8 @@ target_link_libraries(tracey_mctraceface PRIVATE
   tracey_mctraceface::trace_filter
   tracey_mctraceface::trace_server
   tracey_mctraceface::background_process
-  tracey_mctraceface::perf_capabilities)
+  tracey_mctraceface::perf_capabilities
+  tracey_mctraceface::log)
 
 set_target_properties(tracey_mctraceface PROPERTIES
   CXX_STANDARD ${tracey_mctraceface_CXX_STANDARD})

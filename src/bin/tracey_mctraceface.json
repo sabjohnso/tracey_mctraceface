@@ -25,6 +25,16 @@
         {
           "kind": "flag",
           "names": [
+            "quiet",
+            "q"
+          ],
+          "doc": [
+            "Suppress status messages. Only errors and warnings are printed."
+          ]
+        },
+        {
+          "kind": "flag",
+          "names": [
             "multi-thread"
           ],
           "doc": [
@@ -226,6 +236,16 @@
           ]
         },
         {
+          "kind": "flag",
+          "names": [
+            "quiet",
+            "q"
+          ],
+          "doc": [
+            "Suppress status messages. Only errors and warnings are printed."
+          ]
+        },
+        {
           "kind": "option",
           "names": [
             "pid",
@@ -419,6 +439,16 @@
           ],
           "doc": [
             "Print perf command and other diagnostic information."
+          ]
+        },
+        {
+          "kind": "flag",
+          "names": [
+            "quiet",
+            "q"
+          ],
+          "doc": [
+            "Suppress status messages. Only errors and warnings are printed."
           ]
         },
         {

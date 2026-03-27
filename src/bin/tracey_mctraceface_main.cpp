@@ -3,6 +3,7 @@
 #include <tracey_mctraceface/background_process.hpp>
 #include <tracey_mctraceface/compressed_sink.hpp>
 #include <tracey_mctraceface/fxt_writer.hpp>
+#include <tracey_mctraceface/log.hpp>
 #include <tracey_mctraceface/perf_capabilities.hpp>
 #include <tracey_mctraceface/perf_driver.hpp>
 #include <tracey_mctraceface/perf_script_parser.hpp>
@@ -38,18 +39,17 @@ namespace tracey_mctraceface {
       const std::string& working_dir,
       const std::string& output,
       bool sampling,
-      const TraceFilter::Config& filter_config = {},
-      bool verbose = false) -> int {
+      const TraceFilter::Config& filter_config = {}) -> int {
       PerfConfig perf_config;
       perf_config.sampling = sampling;
       auto script_args = build_perf_script_args(perf_config, working_dir);
 
-      if (verbose) {
-        std::cerr << "perf script command:";
+      {
+        std::string cmd = "perf script command:";
         for (const auto& a : script_args) {
-          std::cerr << " " << a;
+          cmd += " " + a;
         }
-        std::cerr << '\n';
+        log::debug(cmd);
       }
 
       Subprocess perf_script(script_args);
@@ -115,6 +115,17 @@ namespace tracey_mctraceface {
       if (s == "kernel") return TraceScope::Kernel;
       if (s == "both") return TraceScope::Both;
       return TraceScope::Userspace;
+    }
+
+    void
+    setup_logging(const nlohmann::json& sub) {
+      if (sub.value("quiet", false)) {
+        log::set_level(log::Level::Quiet);
+      } else if (sub.value("verbose", false)) {
+        log::set_level(log::Level::Verbose);
+      } else {
+        log::set_level(log::Level::Normal);
+      }
     }
 
     auto
@@ -233,16 +244,17 @@ namespace tracey_mctraceface {
         }
       }
 
-      auto verbose = sub.value("verbose", false);
-      if (verbose) {
-        std::cerr << "perf record command:";
+      setup_logging(sub);
+
+      {
+        std::string cmd = "perf record command:";
         for (const auto& a : record_args) {
-          std::cerr << " " << a;
+          cmd += " " + a;
         }
-        std::cerr << '\n';
+        log::debug(cmd);
       }
 
-      std::cerr << "Recording " << program << " ...\n";
+      log::info("Recording " + program + " ...");
       BackgroundProcess perf_record(record_args);
 
       // 4. Wait for perf (and the target) to finish
@@ -255,13 +267,12 @@ namespace tracey_mctraceface {
         return 0;
       }
 
-      std::cerr << "Decoding trace ...\n";
+      log::info("Decoding trace ...");
       auto result = decode_perf_data(
         work_dir.string(),
         output,
         perf_config.sampling,
-        build_filter_config(sub),
-        verbose);
+        build_filter_config(sub));
       maybe_serve(sub, output);
       return result;
     }
@@ -320,23 +331,24 @@ namespace tracey_mctraceface {
         }
       }
 
-      auto verbose = sub.value("verbose", false);
-      if (verbose) {
-        std::cerr << "perf record command:";
+      setup_logging(sub);
+
+      {
+        std::string cmd = "perf record command:";
         for (const auto& a : record_args) {
-          std::cerr << " " << a;
+          cmd += " " + a;
         }
-        std::cerr << '\n';
+        log::debug(cmd);
       }
 
-      std::cerr << "Attaching to PID(s) " << pid_str << " ...\n";
+      log::info("Attaching to PID(s) " + pid_str + " ...");
       BackgroundProcess perf_record(record_args);
 
       // Brief pause for perf to attach
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
       // 4. Wait for Ctrl+C
-      std::cerr << "Recording. Press Ctrl+C to stop.\n";
+      log::info("Recording. Press Ctrl+C to stop.");
       g_interrupted = 0;
 
       struct sigaction sa{};
@@ -359,7 +371,7 @@ namespace tracey_mctraceface {
       sigaction(SIGINT, &sa, nullptr);
 
       // 5. Signal perf to snapshot and stop
-      std::cerr << "\nStopping recording ...\n";
+      log::info("Stopping recording ...");
       if (!perf_config.full_execution && !perf_config.sampling) {
         if (caps.snapshot_on_exit) {
           perf_record.send_signal(SIGINT);
@@ -377,13 +389,12 @@ namespace tracey_mctraceface {
         return 0;
       }
 
-      std::cerr << "Decoding trace ...\n";
+      log::info("Decoding trace ...");
       auto result = decode_perf_data(
         work_dir.string(),
         output,
         perf_config.sampling,
-        build_filter_config(sub),
-        verbose);
+        build_filter_config(sub));
       maybe_serve(sub, output);
       return result;
     }
@@ -395,12 +406,12 @@ namespace tracey_mctraceface {
       auto output =
         std::filesystem::absolute(sub.value("output", "trace.fxt")).string();
       auto sampling = sub.value("sampling", false);
-      auto verbose = sub.value("verbose", false);
+      setup_logging(sub);
 
-      std::cerr << "Decoding " << working_dir << " -> " << output << '\n';
+      log::info("Decoding " + working_dir + " -> " + output);
 
       auto result = decode_perf_data(
-        working_dir, output, sampling, build_filter_config(sub), verbose);
+        working_dir, output, sampling, build_filter_config(sub));
       maybe_serve(sub, output);
       return result;
     }
